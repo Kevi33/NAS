@@ -1,0 +1,129 @@
+# Clearance and collision report
+
+Summary: **114/114 checks passed**.
+
+Boolean intersections larger than 0.10 mm³ are failures. Zero-volume support contact is intentional.
+
+- **PASS** — Printed assembly self-collision: No printed-part self-intersections.
+- **PASS** — HDD2 lower enclosure clearance: No forbidden intersections.
+- **PASS** — HDD1 upper enclosure clearance: No forbidden intersections.
+- **PASS** — Raspberry Pi case clearance: No forbidden intersections.
+- **PASS** — USB hub clearance: No forbidden intersections.
+- **PASS** — 120 mm fan clearance: No forbidden intersections.
+- **PASS** — 80 mm fan clearance: No forbidden intersections.
+- **PASS** — HDD lower USB B plug: No forbidden intersections.
+- **PASS** — HDD lower DC plug: No forbidden intersections.
+- **PASS** — HDD upper USB B plug: No forbidden intersections.
+- **PASS** — HDD upper DC plug: No forbidden intersections.
+- **PASS** — Pi Ethernet plug: No forbidden intersections.
+- **PASS** — Pi USB C plug: No forbidden intersections.
+- **PASS** — Pi USB A plug: No forbidden intersections.
+- **PASS** — HDD lower USB B bend zone: No forbidden intersections.
+- **PASS** — HDD lower DC bend zone: No forbidden intersections.
+- **PASS** — HDD lower switch access: No forbidden intersections.
+- **PASS** — HDD upper USB B bend zone: No forbidden intersections.
+- **PASS** — HDD upper DC bend zone: No forbidden intersections.
+- **PASS** — HDD upper switch access: No forbidden intersections.
+- **PASS** — Pi port and route clearance: No forbidden intersections.
+- **PASS** — USB hub plug clearance: No forbidden intersections.
+- **PASS** — USB hub front fan USB adapter: No forbidden intersections.
+- **PASS** — USB hub rear fan USB adapter: No forbidden intersections.
+- **PASS** — USB hub host cable bend: No forbidden intersections.
+- **PASS** — HDD lower rear exit route: No forbidden intersections.
+- **PASS** — HDD upper rear exit route: No forbidden intersections.
+- **PASS** — front fan wire route: No forbidden intersections.
+- **PASS** — rear fan wire route: No forbidden intersections.
+- **PASS** — USB hub host cable route: No forbidden intersections.
+- **PASS** — Hardware separation: HDD_lower / HDD_upper: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: HDD_lower / Pi_case: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: HDD_lower / USB_hub: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: HDD_lower / fan_120: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: HDD_lower / fan_80: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: HDD_upper / Pi_case: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: HDD_upper / USB_hub: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: HDD_upper / fan_120: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: HDD_upper / fan_80: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: Pi_case / USB_hub: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: Pi_case / fan_120: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: Pi_case / fan_80: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: USB_hub / fan_120: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: USB_hub / fan_80: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: fan_120 / fan_80: Intersection volume 0.000 mm³.
+- **PASS** — Cross-system connector and cable separation: 332 unrelated cross-system pairs checked; 5 declared electrical connection pairs handled separately.
+- **PASS** — Cable continuity: Lower HDD USB-B plug to bend: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Lower HDD USB-B bend to exit: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Lower HDD DC plug to bend: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Lower HDD DC bend to exit: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Upper HDD USB-B plug to bend: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Upper HDD USB-B bend to exit: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Upper HDD DC plug to bend: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Upper HDD DC bend to exit: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Pi Ethernet plug to routed field: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Pi USB-C plug to routed field: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Pi USB-A plug to routed field: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Hub body to host bend: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Hub host bend to route: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Hub host route to Pi field: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Front fan to wire route: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Front fan route to USB adapter: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Front fan adapter to hub: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Rear fan to wire route: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Rear fan route to USB adapter: Endpoint distance 0.000 mm.
+- **PASS** — Cable continuity: Rear fan adapter to hub: Endpoint distance 0.000 mm.
+- **PASS** — HDD lower service sweep: No forbidden intersections.
+- **PASS** — HDD upper service sweep: No forbidden intersections.
+- **PASS** — Pi vertical service sweep: No forbidden intersections.
+- **PASS** — Mechanical contact: hdd_tray_lower_front / left_side_front: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: hdd_tray_lower_front / right_side_front: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: hdd_tray_lower_front / base_front: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: hdd_tray_lower_rear / left_side_rear: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: hdd_tray_lower_rear / right_side_rear: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: hdd_tray_lower_rear / base_rear: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: hdd_tray_upper_front / left_side_front: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: hdd_tray_upper_front / right_side_front: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: hdd_tray_upper_front / base_front: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: hdd_tray_upper_rear / left_side_rear: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: hdd_tray_upper_rear / right_side_rear: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: hdd_tray_upper_rear / base_rear: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: hdd_keeper_lower / hdd_tray_lower_front: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: hdd_keeper_upper / hdd_tray_upper_front: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: pi_tray / left_side_front: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: pi_tray / right_side_front: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: usb_hub_mount / right_side_rear: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: cable_clip_1 / base_rear: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: cable_clip_2 / base_rear: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: foot_1 / base_front: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: foot_2 / base_front: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: foot_3 / base_rear: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: foot_4 / base_rear: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: USB hub bottom retention: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: 120 mm fan panel seating: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: 80 mm fan panel seating: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: 80 mm fan guard seating: Minimum surface distance 0.000 mm.
+- **PASS** — HDD lower post-removal support polygon: HDD center (73.0, 131.3); fixed/left support polygon ((12.35, 60.0), (133.65, 31.549999999999997), (133.65, 231.05), (12.35, 205.0)).
+- **PASS** — HDD upper post-removal support polygon: HDD center (73.0, 131.3); fixed/left support polygon ((12.35, 60.0), (133.65, 31.549999999999997), (133.65, 231.05), (12.35, 205.0)).
+- **PASS** — Right-front side-panel removal after Pi tray removal: 67 rigid-body positions checked through (1.0, 0.0, 0.0) x 20.0 mm.
+- **PASS** — Right-rear side-panel and unplugged hub-carrier removal: 67 rigid-body positions checked through (1.0, 0.0, 0.0) x 20.0 mm.
+- **PASS** — Rear cable-cover, fan, and guard rearward removal: 80 rigid-body positions checked through (0.0, 1.0, 0.0) x 80.0 mm.
+- **PASS** — Rear-wall traversal: Pi_port_and_route_clearance: Route reaches Y=292.10 mm past rear wall Y=291.10 mm.
+- **PASS** — Rear-wall traversal: HDD_lower_rear_exit_route: Route reaches Y=292.10 mm past rear wall Y=291.10 mm.
+- **PASS** — Rear-wall traversal: HDD_upper_rear_exit_route: Route reaches Y=292.10 mm past rear wall Y=291.10 mm.
+- **PASS** — Rear-wall traversal: USB_hub_plug_clearance: Route reaches Y=296.30 mm past rear wall Y=291.10 mm.
+- **PASS** — HDD-to-HDD airflow gap: Actual 12.00 mm; required 12.00 mm.
+- **PASS** — HDD rear cable chamber depth: Actual 60.00 mm; required 60.00 mm.
+- **PASS** — HDD left rail guide clearance: Actual 1.25 mm; configured 1.25 mm.
+- **PASS** — Pi clear of structural mid-frame: Horizontal service gap 5.25 mm.
+- **PASS** — Front fan to HDD nose gap: Actual 6.50 mm.
+- **PASS** — Front fan to tray clearance: Actual 2.25 mm.
+- **PASS** — Rear fan top clearance: Actual 2.00 mm.
+- **PASS** — Provisional USB hub to rear fan-guard clearance: Actual 2.20 mm; required 1.50 mm.
+- **PASS** — Fixed HDD service posts clear drive body: Front/rear body gaps 1.25/1.25 mm; required 1.25 mm.
+
+## Service-path assumptions
+
+- HDD sweep checks remove both right shell modules, the selected keeper, and removable right mid-frame spine.
+- Before right-side withdrawal, the Pi/tray is removed and every hub device/host lead is unplugged; the strapped hub moves with its carrier.
+- The untouched loaded HDD remains inside the fixed-pedestal/left-ledge support polygon.
+- Pi sweep checks remove only the top service lid.
+- Rear cable-cover service is sampled as a rigid +Y pull of panel, fan, and guard after the fan lead is unplugged.
+- Connector/bend coordinates remain provisional until the real hardware is measured.
