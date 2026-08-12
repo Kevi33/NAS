@@ -159,20 +159,75 @@ def make_panel_key_fit_test() -> cq.Workplane:
 
 
 def make_keeper_fit_test() -> cq.Workplane:
-    rail = box_at(0.0, 0.0, 0.0, C.TRAY_RAIL_W, 32.0, C.TRAY_THICKNESS)
-    rail = rail.union(box_at(-2.4, 8.0, 0.0, 2.65, 16.0, C.TRAY_THICKNESS))
-    rail = rail.cut(
+    rail = _keeper_retention_socket(
+        f"{int(round(C.HDD_KEEPER_CLEARANCE * 100)):02d}"
+    )
+    slot_y = (C.HDD_KEEPER_TEST_RAIL_LENGTH - C.HDD_KEEPER_SLOT_L) / 2.0
+    keeper = make_keeper().translate((16.0, slot_y + C.HDD_KEEPER_CLEARANCE, 0.0))
+    return cq.Workplane(obj=compound([rail, keeper]))
+
+
+def _keeper_retention_socket(label: str) -> cq.Workplane:
+    """Production-faithful rail socket with a fused clearance label."""
+    rail_length = C.HDD_KEEPER_TEST_RAIL_LENGTH
+    slot_y = (rail_length - C.HDD_KEEPER_SLOT_L) / 2.0
+    socket = box_at(0.0, 0.0, 0.0, C.TRAY_RAIL_W, rail_length, C.TRAY_THICKNESS)
+    socket = socket.union(
         box_at(
-            -0.1,
-            10.0,
-            -0.1,
-            C.TRAY_RAIL_W + 0.2,
-            C.HDD_KEEPER_SLOT_L + 0.2,
-            C.TRAY_THICKNESS + 0.2,
+            -C.HDD_KEEPER_BYPASS_INSET,
+            slot_y - C.HDD_KEEPER_BYPASS_END_OVERLAP,
+            0.0,
+            C.HDD_KEEPER_BYPASS_W,
+            C.HDD_KEEPER_SLOT_L + 2.0 * C.HDD_KEEPER_BYPASS_END_OVERLAP,
+            C.TRAY_THICKNESS,
         )
     )
-    keeper = make_keeper().translate((16.0, 10.0 + C.FIT_CLEARANCE, 0.0))
-    return cq.Workplane(obj=compound([rail, keeper]))
+    socket = socket.cut(
+        box_at(
+            0.0,
+            slot_y,
+            -C.JOINT_EXTRA_DEPTH,
+            C.TRAY_RAIL_W + C.JOINT_EXTRA_DEPTH,
+            C.HDD_KEEPER_SLOT_L,
+            C.TRAY_THICKNESS + 2.0 * C.JOINT_EXTRA_DEPTH,
+        )
+    )
+    return _emboss_numeric_label(socket, label, C.TRAY_RAIL_W / 2.0, slot_y / 2.0, C.TRAY_THICKNESS)
+
+
+def _retained_keeper_variant(clearance: float, label: str) -> cq.Workplane:
+    """Production keeper at one test clearance, with a matching numeric ID."""
+    keeper = make_keeper(clearance)
+
+    # Repeat the numeric ID on the loose keeper so variants cannot be mixed up
+    # after removal from the print plate. The label sits inside the socket plan.
+    pixel = C.FIT_TEST_LABEL_PIXEL
+    gap = C.FIT_TEST_LABEL_GAP
+    digit_w = 3.0 * pixel + 2.0 * gap
+    label_w = 2.0 * digit_w + C.FIT_TEST_LABEL_DIGIT_GAP
+    base_l = C.HDD_KEEPER_SLOT_L - 2.0 * clearance
+    return _emboss_numeric_label(
+        keeper,
+        label,
+        label_w / 2.0,
+        base_l / 2.0,
+        C.TRAY_THICKNESS,
+    )
+
+
+def make_keeper_retention_test() -> cq.Workplane:
+    """Five separately labeled socket/keeper retention pairs."""
+    shapes: list[cq.Workplane] = []
+    slot_y = (C.HDD_KEEPER_TEST_RAIL_LENGTH - C.HDD_KEEPER_SLOT_L) / 2.0
+    for index, clearance in enumerate(C.HDD_KEEPER_TEST_CLEARANCES):
+        label = f"{int(round(clearance * 100)):02d}"
+        cell_x = index * C.HDD_KEEPER_TEST_CELL_PITCH
+        socket = _keeper_retention_socket(label).translate((cell_x, 0.0, 0.0))
+        keeper = _retained_keeper_variant(clearance, label).translate(
+            (cell_x + C.HDD_KEEPER_TEST_LOOSE_X, slot_y, 0.0)
+        )
+        shapes.extend((socket, keeper))
+    return cq.Workplane(obj=compound(shapes))
 
 
 def fit_test_models() -> dict[str, cq.Workplane]:
@@ -181,4 +236,5 @@ def fit_test_models() -> dict[str, cq.Workplane]:
         "panel_key_fit_test": make_panel_key_fit_test(),
         "hdd_rail_fit_test": make_rail_fit_test(),
         "hdd_keeper_fit_test": make_keeper_fit_test(),
+        "hdd_keeper_retention_test": make_keeper_retention_test(),
     }

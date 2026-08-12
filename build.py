@@ -52,10 +52,16 @@ def _ensure_directories() -> None:
 
 
 def _clear_generated_files() -> None:
-    """Remove only prior generated artifacts from the known output folders."""
+    """Remove generator-owned artifacts while preserving slicer project files."""
+    generated_suffixes = {".stl", ".step", ".png", ".md"}
+    focused_report = REPORT_DIR / "hdd_keeper_retention_test_validation.md"
     for directory in (STL_DIR, STEP_DIR, ASSEMBLY_DIR, FIT_DIR, REPORT_DIR):
         for path in directory.iterdir():
-            if path.is_file():
+            if (
+                path.is_file()
+                and path.suffix.lower() in generated_suffixes
+                and path != focused_report
+            ):
                 path.unlink()
 
 
@@ -129,6 +135,7 @@ def _render_previews() -> list[str]:
         ("panel_key_fit_test", (1400, 650)),
         ("hdd_rail_fit_test", (1000, 600)),
         ("hdd_keeper_fit_test", (900, 600)),
+        ("hdd_keeper_retention_test", (1400, 650)),
     ):
         try:
             render_stl(FIT_DIR / f"{basename}.stl", FIT_DIR / f"{basename}_preview.png", size)

@@ -1,5 +1,7 @@
 """Skeletal, split HDD cradle and removable side keeper."""
 
+import math
+
 import cadquery as cq
 
 import config as C
@@ -65,17 +67,9 @@ def make_tray_front() -> cq.Workplane:
                 C.TRAY_THICKNESS,
             )
         )
-    # Replaceable keeper socket in the right rail.
-    keeper_socket = box_at(
-        C.TRAY_OUTER_W - C.TRAY_RAIL_W - 0.1,
-        C.HDD_KEEPER_SLOT_Y - 0.1,
-        -0.1,
-        C.TRAY_RAIL_W + 0.2,
-        C.HDD_KEEPER_SLOT_L + 0.2,
-        C.TRAY_THICKNESS + 0.2,
-    )
-    shape = shape.cut(keeper_socket)
-    # Inboard bypass rib preserves a single connected cradle around the socket.
+    # The bypass rib overlaps the rail at both ends to keep the cradle connected.
+    # Cut the nominal keeper socket after the union so its inboard wall retains
+    # the calibrated clearance without sacrificing those structural end laps.
     right_rail_x = C.TRAY_OUTER_W - C.TRAY_RAIL_W
     shape = shape.union(
         box_at(
@@ -85,6 +79,16 @@ def make_tray_front() -> cq.Workplane:
             C.HDD_KEEPER_BYPASS_W,
             C.HDD_KEEPER_SLOT_L + 2.0 * C.HDD_KEEPER_BYPASS_END_OVERLAP,
             C.TRAY_THICKNESS,
+        )
+    )
+    shape = shape.cut(
+        box_at(
+            right_rail_x,
+            C.HDD_KEEPER_SLOT_Y,
+            -C.JOINT_EXTRA_DEPTH,
+            C.TRAY_RAIL_W + C.JOINT_EXTRA_DEPTH,
+            C.HDD_KEEPER_SLOT_L,
+            C.TRAY_THICKNESS + 2.0 * C.JOINT_EXTRA_DEPTH,
         )
     )
     front_support_local_y = C.HDD_TRAY_SUPPORT_FRONT_Y - C.TRAY_Y
@@ -126,12 +130,42 @@ def make_tray_rear() -> cq.Workplane:
     return shape
 
 
-def make_keeper() -> cq.Workplane:
+def _keeper_retention_bump(clearance: float) -> cq.Workplane:
+    """Broad circular-cam bead selected by the physical retention coupon."""
+    radius = C.HDD_KEEPER_RETENTION_BUMP_RADIUS
+    projection = 2.0 * clearance + C.HDD_KEEPER_RETENTION_INTERFERENCE
+    if not 0.0 < projection < 2.0 * radius:
+        raise ValueError("HDD keeper retention projection must be between zero and the bump diameter")
+    center_y = radius - projection
+    center_z = C.TRAY_THICKNESS / 2.0
+    half_angle = math.acos(projection / radius - 1.0)
+    start_angle = 2.0 * math.pi - half_angle
+    cap_points = [
+        (
+            center_y + radius * math.cos(
+                start_angle + (half_angle - start_angle) * index / C.HDD_KEEPER_RETENTION_BUMP_SEGMENTS
+            ),
+            center_z + radius * math.sin(
+                start_angle + (half_angle - start_angle) * index / C.HDD_KEEPER_RETENTION_BUMP_SEGMENTS
+            ),
+        )
+        for index in range(C.HDD_KEEPER_RETENTION_BUMP_SEGMENTS + 1)
+    ]
+    return (
+        cq.Workplane("YZ", origin=(C.HDD_KEEPER_RETENTION_BUMP_X, 0.0, 0.0))
+        .polyline(cap_points)
+        .close()
+        .extrude(C.HDD_KEEPER_RETENTION_BUMP_LENGTH)
+    )
+
+
+def make_keeper(clearance: float | None = None) -> cq.Workplane:
     # The base replaces a short rail segment; the outer wall retains the HDD.
-    base_w = C.TRAY_RAIL_W - 2.0 * C.FIT_CLEARANCE
-    base_l = C.HDD_KEEPER_SLOT_L - 2.0 * C.FIT_CLEARANCE
+    keeper_clearance = C.HDD_KEEPER_CLEARANCE if clearance is None else clearance
+    base_w = C.TRAY_RAIL_W - 2.0 * keeper_clearance
+    base_l = C.HDD_KEEPER_SLOT_L - 2.0 * keeper_clearance
     body = box_at(0.0, 0.0, 0.0, base_w, base_l, C.TRAY_THICKNESS)
-    guide_x = C.TRAY_RAIL_W - C.TRAY_GUIDE_T - C.FIT_CLEARANCE
+    guide_x = C.TRAY_RAIL_W - C.TRAY_GUIDE_T - keeper_clearance
     guide = box_at(
         guide_x,
         0.0,
@@ -154,7 +188,9 @@ def make_keeper() -> cq.Workplane:
                 C.HDD_KEEPER_SHOULDER_T,
             )
         )
-    return keeper
+    # The printed 0.00 mm coupon selected this broad solid bead: it supplies
+    # light elastic preload without a thin snap arm or tool-only release.
+    return keeper.union(_keeper_retention_bump(keeper_clearance)).clean()
 
 
 def make_rail_fit_test() -> cq.Workplane:

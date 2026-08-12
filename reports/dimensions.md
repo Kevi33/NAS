@@ -38,14 +38,15 @@ Generated directly from the current `config.py` and CadQuery bounding boxes.
 | `mid_frame_right_spine` | 1 | 8.00 | 164.00 | 8.00 | PASS |
 | `hdd_tray_front` | 2 | 124.30 | 107.25 | 9.00 | PASS |
 | `hdd_tray_rear` | 2 | 124.30 | 101.25 | 9.00 | PASS |
-| `hdd_keeper` | 2 | 7.70 | 15.40 | 9.00 | PASS |
+| `hdd_keeper` | 2 | 8.00 | 16.00 | 9.00 | PASS |
 | `pi_tray` | 1 | 128.00 | 95.00 | 8.00 | PASS |
 | `usb_hub_mount` | 1 | 19.00 | 119.00 | 7.00 | PASS |
 | `cable_clip` | 2 | 12.80 | 10.00 | 15.20 | PASS |
 | `dovetail_fit_test` | 1 | 154.00 | 66.00 | 6.50 | PASS |
 | `panel_key_fit_test` | 1 | 152.00 | 50.00 | 3.30 | PASS |
 | `hdd_rail_fit_test` | 1 | 124.30 | 32.00 | 9.00 | PASS |
-| `hdd_keeper_fit_test` | 1 | 26.10 | 32.00 | 9.00 | PASS |
+| `hdd_keeper_fit_test` | 1 | 26.40 | 32.00 | 9.00 | PASS |
+| `hdd_keeper_retention_test` | 1 | 122.20 | 32.00 | 9.00 | PASS |
 
 Largest single preferred-orientation extent: **174.00 mm** on `mid_frame`.
 
@@ -64,7 +65,8 @@ Largest single preferred-orientation extent: **174.00 mm** on `mid_frame`.
 - 120 mm fan min corner: X 13.00, Y 2.80, Z 27.00
 - 80 mm fan min corner: X 26.50, Y 263.30, Z 89.20
 - Panel thickness: **2.80 mm**
-- Sliding fit clearance: **0.30 mm per mating side**
+- Sliding fit clearance: **0.20 mm per mating side**
+- HDD keeper clearance: **0.00 mm per mating side**
 - Mid-frame: Y 141.55 to 149.55 mm
 
 ## Provisional dimensions to measure

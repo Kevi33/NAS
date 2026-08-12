@@ -92,11 +92,11 @@ def placed_printable_parts(parts: dict[str, PrintablePart] | None = None) -> dic
             True,
         )
         keeper_x = C.TRAY_OUTER_X + C.TRAY_OUTER_W - C.TRAY_RAIL_W
-        keeper_y = C.TRAY_Y + C.HDD_KEEPER_SLOT_Y + C.FIT_CLEARANCE
+        keeper_y = C.TRAY_Y + C.HDD_KEEPER_SLOT_Y + C.HDD_KEEPER_CLEARANCE
         add(
             f"hdd_keeper_{label}",
             "hdd_keeper",
-            parts["hdd_keeper"].shape.translate((keeper_x + C.FIT_CLEARANCE, keeper_y, tray_z)),
+            parts["hdd_keeper"].shape.translate((keeper_x + C.HDD_KEEPER_CLEARANCE, keeper_y, tray_z)),
             True,
         )
 

@@ -11,7 +11,8 @@ The build creates real solids rather than a rendering-only mock-up: individual S
 - Drive rear cable chamber: **60.0 mm**
 - HDD guide clearance: **1.25 mm per guided side**
 - HDD-to-HDD airflow gap: **12.0 mm**
-- Production joint clearance: **0.30 mm per mating side**
+- Production joint clearance: **0.20 mm per mating side**, calibrated from the printed P1S fit coupon
+- HDD keeper clearance: **0.00 mm per side**, calibrated from the printed retention coupon and isolated from the panel/dovetail setting
 
 The 291.1 mm depth is deliberate. Two 2.8 mm walls, a 25 mm fan, a 6.5 mm fan/drive gap, a 194 mm drive, and a 60 mm cable chamber cannot fit the initial 250-260 mm styling target without sacrificing cable bend space.
 
@@ -25,6 +26,12 @@ CadQuery 2.6.1 with 64-bit CPython 3.12 is the tested toolchain.
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe build.py
+```
+
+To generate only the dedicated keeper-retention calibration model without touching enclosure exports, use:
+
+```powershell
+.\.venv\Scripts\python.exe build_keeper_retention_test.py
 ```
 
 On Linux/macOS, use `.venv/bin/python`. A good run ends with `BUILD RESULT: SUCCESS`; any source-solid, exported-mesh, STEP-reopen, print-bed, collision, cable-route, or service-path failure returns a non-zero exit code. The generator deletes only old files in its known output directories before rebuilding, so renamed artifacts cannot remain stale.
@@ -52,11 +59,13 @@ exports/
     panel_key_fit_test.{stl,step}
     hdd_rail_fit_test.{stl,step}
     hdd_keeper_fit_test.{stl,step}
+    hdd_keeper_retention_test.{stl,step}
     *_preview.png
 reports/
   dimensions.md
   printability.md
   clearance_report.md
+  hdd_keeper_retention_test_validation.md
 ```
 
 The assembly, exploded, and cutaway `NAS_Internal_Inspection` STL files are disconnected inspection models containing printed and hardware solids. The cutaway omits the front, right side, and top shell modules to expose the internal relationships. Do not slice these inspection models as one print job. Use the individual STL files in the quantities listed in the dimension report.
@@ -69,7 +78,7 @@ Edit `config.py`, then rerun `build.py`; never hand-edit generated exports. Impo
 - `PI_CASE_L`, `PI_CASE_W`, `PI_CASE_H`, and Pi port/plug offsets
 - `USB_HUB_L`, `USB_HUB_W`, `USB_HUB_H`, clearance, port offsets, and rear access envelope
 - USB-B, DC, USB-A, Ethernet, USB-C, fan-adapter, and cable-bend envelopes
-- `FIT_CLEARANCE` and all panel-key dimensions
+- `FIT_CLEARANCE`, the independent `HDD_KEEPER_CLEARANCE`, and all panel-key dimensions
 - `PRINTER_MODEL`, `PRINT_BED_X`, `PRINT_BED_Y`, `PRINT_BED_Z`, `PRINT_USABLE_Z`, and `PRINT_BED_EDGE_MARGIN`
 
 The case depth, module split, frame pockets, carrier locations, cable chamber, service sweeps, exports, and reports derive from these values. Because the real molded housings and plugs have not been measured, print the coupons and verify the report against caliper measurements before a full enclosure print.
@@ -104,8 +113,11 @@ For HDD service, remove both top modules, unplug and lift out the Pi and its tra
 - `panel_key_fit_test.stl`: the exact short planar key/pocket profile used by the production shell, at the same five clearances.
 - `hdd_rail_fit_test.stl`: a 32 mm-deep full-width cradle slice for inserting the real UGREEN nose.
 - `hdd_keeper_fit_test.stl`: the removable keeper and its supported rail socket.
+- `hdd_keeper_retention_test.stl`: five production-faithful keeper/socket pairs at 0.00/0.05/0.10/0.15/0.20 mm keeper clearance, each with a broad rounded friction bead for light positive retention.
 
-Labels `20`, `25`, `30`, `35`, and `40` mean hundredths of a millimetre per mating side. Print coupons in the documented orientation, with the same material, layer height, wall count, and seam settings planned for production. Test them only after cooling; use the smallest clearance that engages fully without force or wobble.
+Labels give hundredths of a millimetre per mating side. On the keeper-retention coupon, match each loose keeper to the socket with the same label, orient its guide toward the open/outboard edge, and press it vertically down until both shoulders seat. After cooling, invert and lightly shake the pair, then confirm hand removal without tools. Use the smallest variant that seats by hand, does not rattle, and remains captured under gravity and light shaking.
+
+The physically tested `00` variant is the current production keeper: its broad R1.0 friction bead provides light positive retention while remaining removable by hand. The HDD rail profile and the global panel/dovetail clearance remain independently calibrated and unchanged.
 
 ## Recommended FDM settings
 

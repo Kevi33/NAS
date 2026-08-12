@@ -1,10 +1,12 @@
 # Clearance and collision report
 
-Summary: **114/114 checks passed**.
+Summary: **116/116 checks passed**.
 
-Boolean intersections larger than 0.10 mm³ are failures. Zero-volume support contact is intentional.
+Boolean intersections larger than 0.10 mm³ are failures except for the two explicitly bounded, coupon-calibrated HDD keeper friction beads. Zero-volume support contact is intentional.
 
 - **PASS** — Printed assembly self-collision: No printed-part self-intersections.
+- **PASS** — Calibrated keeper retention: hdd_keeper_lower / hdd_tray_lower_front: Elastic bead/socket interference 0.205 mm³; required 0.15–0.30 mm³; localized bounds 3.600 x 0.100 x 0.872 mm.
+- **PASS** — Calibrated keeper retention: hdd_keeper_upper / hdd_tray_upper_front: Elastic bead/socket interference 0.205 mm³; required 0.15–0.30 mm³; localized bounds 3.600 x 0.100 x 0.872 mm.
 - **PASS** — HDD2 lower enclosure clearance: No forbidden intersections.
 - **PASS** — HDD1 upper enclosure clearance: No forbidden intersections.
 - **PASS** — Raspberry Pi case clearance: No forbidden intersections.

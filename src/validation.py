@@ -779,6 +779,12 @@ def clearance_checks(
     checks: list[CheckResult] = []
 
     # Printed parts must fit one another without occupying the same volume.
+    # The two keeper/socket pairs are calibrated friction fits with a narrowly
+    # bounded elastic interference; they are checked explicitly below.
+    keeper_retention_pairs = {
+        frozenset(("hdd_keeper_lower", "hdd_tray_lower_front")),
+        frozenset(("hdd_keeper_upper", "hdd_tray_upper_front")),
+    }
     printed_hits: list[tuple[str, str, float]] = []
     printed_items = list(placed.items())
     for index, (first_name, first) in enumerate(printed_items):
@@ -793,6 +799,8 @@ def clearance_checks(
             if not bbox_overlap:
                 continue
             volume = _intersection_volume(first.shape, second.shape)
+            if frozenset((first_name, second_name)) in keeper_retention_pairs:
+                continue
             if volume > C.COLLISION_VOLUME_EPS:
                 printed_hits.append((first_name, second_name, volume))
     printed_detail = "No printed-part self-intersections."
@@ -801,6 +809,38 @@ def clearance_checks(
             f"{first}/{second} ({volume:.2f} mm³)" for first, second, volume in printed_hits
         )
     checks.append(CheckResult("Printed assembly self-collision", not printed_hits, printed_detail))
+
+    for keeper_name, tray_name in (
+        ("hdd_keeper_lower", "hdd_tray_lower_front"),
+        ("hdd_keeper_upper", "hdd_tray_upper_front"),
+    ):
+        overlap_shape = shape_value(placed[keeper_name].shape).intersect(
+            shape_value(placed[tray_name].shape)
+        )
+        overlap = max(overlap_shape.Volume(), 0.0)
+        overlap_bb = overlap_shape.BoundingBox()
+        expected_depth = C.HDD_KEEPER_CLEARANCE + C.HDD_KEEPER_RETENTION_INTERFERENCE
+        localized = (
+            abs(overlap_bb.ylen - expected_depth) <= 1e-4
+            and overlap_bb.xlen <= C.HDD_KEEPER_RETENTION_BUMP_LENGTH + 1e-4
+            and overlap_bb.zlen <= 2.0 * C.HDD_KEEPER_RETENTION_BUMP_RADIUS + 1e-4
+        )
+        retention_pass = (
+            C.HDD_KEEPER_RETENTION_VOLUME_MIN
+            <= overlap
+            <= C.HDD_KEEPER_RETENTION_VOLUME_MAX
+            and localized
+        )
+        checks.append(
+            CheckResult(
+                f"Calibrated keeper retention: {keeper_name} / {tray_name}",
+                retention_pass,
+                f"Elastic bead/socket interference {overlap:.3f} mm³; required "
+                f"{C.HDD_KEEPER_RETENTION_VOLUME_MIN:.2f}–"
+                f"{C.HDD_KEEPER_RETENTION_VOLUME_MAX:.2f} mm³; localized bounds "
+                f"{overlap_bb.xlen:.3f} x {overlap_bb.ylen:.3f} x {overlap_bb.zlen:.3f} mm.",
+            )
+        )
 
     labels = {
         "HDD_lower": "HDD2 lower enclosure clearance",
@@ -1185,6 +1225,7 @@ def write_dimensions_report(
             f"- 80 mm fan min corner: X {C.REAR_FAN_X:.2f}, Y {C.REAR_FAN_Y:.2f}, Z {C.REAR_FAN_Z:.2f}",
             f"- Panel thickness: **{C.WALL:.2f} mm**",
             f"- Sliding fit clearance: **{C.FIT_CLEARANCE:.2f} mm per mating side**",
+            f"- HDD keeper clearance: **{C.HDD_KEEPER_CLEARANCE:.2f} mm per mating side**",
             f"- Mid-frame: Y {C.MID_FRAME_FRONT_Y:.2f} to {C.MID_FRAME_REAR_Y:.2f} mm",
             "",
             "## Provisional dimensions to measure",
@@ -1266,7 +1307,8 @@ def write_clearance_report(path: Path, checks: list[CheckResult]) -> None:
         f"Summary: **{passed}/{len(checks)} checks passed**.",
         "",
         "Boolean intersections larger than "
-        f"{C.COLLISION_VOLUME_EPS:.2f} mm³ are failures. Zero-volume support contact is intentional.",
+        f"{C.COLLISION_VOLUME_EPS:.2f} mm³ are failures except for the two explicitly bounded, "
+        "coupon-calibrated HDD keeper friction beads. Zero-volume support contact is intentional.",
         "",
     ]
     for check in checks:
