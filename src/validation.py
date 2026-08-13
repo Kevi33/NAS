@@ -15,6 +15,7 @@ from OCP.BRep import BRep_Tool
 from OCP.BRepCheck import BRepCheck_Analyzer
 
 import config as C
+from . import rear as rear_geometry
 from .common import (
     PlacedPart,
     PrintablePart,
@@ -861,6 +862,117 @@ def clearance_checks(
         hits = _collisions(reference.shape, placed)
         readable = ref_name.replace("_", " ")
         checks.append(CheckResult(readable, not hits, _hits_detail(hits)))
+
+    # A manifold one-piece panel can still contain a cantilevered grille
+    # finger. Check each source bar independently: it must have substantial
+    # positive-volume attachment at both circular lands and stay completely
+    # clear of every cable/service cutter.
+    grille_frame = shape_value(rear_geometry.rear_panel_airflow_frame())
+    grille_bars = rear_geometry.rear_grille_bar_shapes()
+    service_cutters = tuple(
+        shape_value(cutter) for cutter in rear_geometry.rear_panel_service_opening_cutters()
+    )
+    minimum_end_embed = max(2.0 * C.NOZZLE_D, 0.8)
+    grille_geometry_epsilon = 1e-6
+    bar_failures: list[str] = []
+    minimum_service_gap = math.inf
+    for index, bar_workplane in enumerate(grille_bars):
+        bar = shape_value(bar_workplane)
+        contacts = bar.intersect(grille_frame).Solids()
+        contact_depths = sorted(contact.BoundingBox().ylen for contact in contacts)
+        contact_volumes = sorted(contact.Volume() for contact in contacts)
+        service_overlap = sum(bar.intersect(cutter).Volume() for cutter in service_cutters)
+        service_gap = min(bar.distance(cutter) for cutter in service_cutters)
+        minimum_service_gap = min(minimum_service_gap, service_gap)
+        if (
+            len(contacts) != 2
+            or min(contact_depths, default=0.0) + 1e-6 < minimum_end_embed
+            or min(contact_volumes, default=0.0)
+            + grille_geometry_epsilon
+            < C.GRILLE_BAR * C.WALL * minimum_end_embed
+            or service_overlap > grille_geometry_epsilon
+            or service_gap + 1e-6 < 2.0 * C.NOZZLE_D
+        ):
+            bar_failures.append(
+                f"bar {index + 1}: contacts={len(contacts)}, depths="
+                f"{[round(depth, 3) for depth in contact_depths]}, volumes="
+                f"{[round(volume, 3) for volume in contact_volumes]}, service overlap="
+                f"{service_overlap:.3f} mm³, service gap={service_gap:.3f} mm"
+            )
+    checks.append(
+        CheckResult(
+            "Rear grille bars terminate into both structural lands",
+            not bar_failures and C.GRILLE_BAR + 1e-6 >= 4.0 * C.NOZZLE_D,
+            (
+                f"{len(grille_bars)} bars; each has two end attachments at least "
+                f"{minimum_end_embed:.2f} mm deep, zero service-opening overlap, at least "
+                f"{minimum_service_gap:.2f} mm service gap, and {C.GRILLE_BAR:.2f} mm width."
+                if not bar_failures
+                else "; ".join(bar_failures)
+            ),
+        )
+    )
+    panel_source = shape_value(rear_geometry.make_rear_panel())
+    guard_source = shape_value(rear_geometry.make_rear_fan_guard())
+    checks.append(
+        CheckResult(
+            "Rear grille and fan guard connected solids",
+            len(panel_source.Solids()) == 1 and len(guard_source.Solids()) == 1,
+            f"Rear panel {len(panel_source.Solids())} solid(s); fan guard "
+            f"{len(guard_source.Solids())} solid(s).",
+        )
+    )
+    rear_panel_bbox = panel_source.BoundingBox()
+    rear_guard_bbox = guard_source.BoundingBox()
+    rear_envelopes_pass = (
+        abs(rear_panel_bbox.xlen - (rear_geometry.PANEL_W + 2.0 * C.PANEL_EDGE_TONGUE)) <= 1e-4
+        and abs(rear_panel_bbox.ylen - rear_geometry.PANEL_H) <= 1e-4
+        and abs(rear_panel_bbox.zlen - C.WALL) <= 1e-3
+        and abs(rear_guard_bbox.xlen - C.REAR_FAN_SIZE) <= 1e-4
+        and abs(rear_guard_bbox.ylen - C.REAR_FAN_SIZE) <= 1e-4
+        and abs(rear_guard_bbox.zlen - C.FAN_GUARD_DEPTH) <= 1e-4
+    )
+    checks.append(
+        CheckResult(
+            "Rear panel and fan guard configured envelopes",
+            rear_envelopes_pass,
+            f"Panel {rear_panel_bbox.xlen:.2f} x {rear_panel_bbox.ylen:.2f} x "
+            f"{rear_panel_bbox.zlen:.2f} mm; guard {rear_guard_bbox.xlen:.2f} x "
+            f"{rear_guard_bbox.ylen:.2f} x {rear_guard_bbox.zlen:.2f} mm.",
+        )
+    )
+    residual_service_volume = sum(
+        panel_source.intersect(cutter).Volume() for cutter in service_cutters
+    )
+    checks.append(
+        CheckResult(
+            "Rear cable and service openings remain unobstructed",
+            residual_service_volume <= grille_geometry_epsilon,
+            f"Residual printed volume inside all five opening cutters: "
+            f"{residual_service_volume:.3f} mm³.",
+        )
+    )
+    grille_cx, grille_cy = rear_geometry.rear_fan_center_local()
+    airflow_aperture = shape_value(
+        cq.Solid.makeCylinder(
+            C.REAR_FAN_CUTOUT_D / 2.0,
+            C.WALL,
+            cq.Vector(grille_cx, grille_cy, 0.0),
+            cq.Vector(0.0, 0.0, 1.0),
+        )
+    )
+    blocked_airflow_volume = sum(
+        shape_value(bar).intersect(airflow_aperture).Volume() for bar in grille_bars
+    )
+    grille_open_area = 1.0 - blocked_airflow_volume / airflow_aperture.Volume()
+    checks.append(
+        CheckResult(
+            "Rear grille nominal airflow open area",
+            grille_open_area + 1e-6 >= C.REAR_GRILLE_MIN_OPEN_AREA,
+            f"Vertical-bar pattern is {100.0 * grille_open_area:.1f}% open within the "
+            f"circular aperture; required {100.0 * C.REAR_GRILLE_MIN_OPEN_AREA:.1f}%.",
+        )
+    )
 
     # Report the measured 140 mm rear stack against every neighboring field
     # called out in the design brief. These explicit results supplement the

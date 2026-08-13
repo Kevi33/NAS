@@ -1,6 +1,6 @@
 # Clearance and collision report
 
-Summary: **145/145 checks passed**.
+Summary: **150/150 checks passed**.
 
 Boolean intersections larger than 0.10 mm³ are failures except for the two explicitly bounded, coupon-calibrated HDD keeper friction beads. Zero-volume support contact is intentional.
 
@@ -36,6 +36,11 @@ Boolean intersections larger than 0.10 mm³ are failures except for the two expl
 - **PASS** — front fan wire route: No forbidden intersections.
 - **PASS** — rear fan wire route: No forbidden intersections.
 - **PASS** — USB hub host cable route: No forbidden intersections.
+- **PASS** — Rear grille bars terminate into both structural lands: 6 bars; each has two end attachments at least 0.80 mm deep, zero service-opening overlap, at least 0.91 mm service gap, and 4.00 mm width.
+- **PASS** — Rear grille and fan guard connected solids: Rear panel 1 solid(s); fan guard 1 solid(s).
+- **PASS** — Rear panel and fan guard configured envelopes: Panel 143.20 x 168.40 x 2.80 mm; guard 140.00 x 140.00 x 10.00 mm.
+- **PASS** — Rear cable and service openings remain unobstructed: Residual printed volume inside all five opening cutters: 0.000 mm³.
+- **PASS** — Rear grille nominal airflow open area: Vertical-bar pattern is 78.6% open within the circular aperture; required 75.0%.
 - **PASS** — Rear-stack separation: 140 mm rear fan / USB hub body: Intersection 0.000 mm³; minimum distance 42.800 mm.
 - **PASS** — Rear-stack separation: 140 mm rear fan / USB hub plug field: Intersection 0.000 mm³; minimum distance 4.800 mm.
 - **PASS** — Rear-stack separation: 140 mm rear fan / Raspberry Pi cable route: Intersection 0.000 mm³; minimum distance 9.000 mm.

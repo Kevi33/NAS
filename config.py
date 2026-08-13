@@ -248,7 +248,10 @@ FAN_GUARD_DEPTH = REAR_FAN_SPACER_DEPTH
 FAN_GUARD_FRAME = 4.0
 FAN_GUARD_BOSS_R = 5.25
 REAR_GRILLE_RING_EXTRA = 1.2
-REAR_GRILLE_BAR_X_OFFSETS = (-56.0, -40.0, -24.0, -8.0, 8.0, 24.0, 40.0, 56.0)
+# Six symmetric bars stay clear of the Pi, fan-wire, and hub service slots.
+# The earlier outer bars were cut by those openings and left short fingers.
+REAR_GRILLE_BAR_X_OFFSETS = (-35.0, -21.0, -7.0, 7.0, 21.0, 35.0)
+REAR_GRILLE_MIN_OPEN_AREA = 0.75
 FAN_GUARD_CROSSBAR_W = 4.0
 FAN_GUARD_CROSSBAR_T = 2.4
 CABLE_CLIP_INNER_D = 8.0

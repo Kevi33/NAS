@@ -10,52 +10,51 @@ PANEL_W = C.NAS_EXTERNAL_W - 2.0 * C.WALL
 PANEL_H = C.NAS_BODY_H - 2.0 * C.WALL
 
 
-def _edge_tongues(shape: cq.Workplane) -> cq.Workplane:
-    usable = PANEL_H - 2.0 * C.PANEL_TONGUE_SEGMENT_H
-    step = usable / max(C.PANEL_TONGUE_COUNT - 1, 1)
-    for index in range(C.PANEL_TONGUE_COUNT):
-        y = index * step
-        shape = shape.union(
-            box_at(-C.PANEL_EDGE_TONGUE, y, 0.0, C.PANEL_EDGE_TONGUE, C.PANEL_TONGUE_SEGMENT_H, C.WALL)
-        )
-        shape = shape.union(
-            box_at(PANEL_W, y, 0.0, C.PANEL_EDGE_TONGUE, C.PANEL_TONGUE_SEGMENT_H, C.WALL)
-        )
-    return shape
+def rear_fan_center_local() -> tuple[float, float]:
+    """Return the fan center in rear-panel source coordinates."""
+
+    return (
+        C.REAR_FAN_X + C.REAR_FAN_SIZE / 2.0 - C.WALL,
+        C.REAR_FAN_Z + C.REAR_FAN_SIZE / 2.0 - C.WALL,
+    )
 
 
-def make_rear_panel() -> cq.Workplane:
-    shape = box_at(0.0, 0.0, 0.0, PANEL_W, PANEL_H, C.WALL)
-    cx = C.REAR_FAN_X + C.REAR_FAN_SIZE / 2.0 - C.WALL
-    cy = C.REAR_FAN_Z + C.REAR_FAN_SIZE / 2.0 - C.WALL
-    opening = cylinder_at(C.REAR_FAN_CUTOUT_D / 2.0, C.WALL + 0.2, (cx, cy, -0.1), (0.0, 0.0, 1.0))
-    shape = shape.cut(opening)
-    disk = cylinder_at(
-        C.REAR_FAN_CUTOUT_D / 2.0 + C.REAR_GRILLE_RING_EXTRA,
-        C.WALL,
-        (cx, cy, 0.0),
+def rear_panel_airflow_frame() -> cq.Workplane:
+    """Rear-panel blank with the circular airflow opening removed."""
+
+    cx, cy = rear_fan_center_local()
+    opening = cylinder_at(
+        C.REAR_FAN_CUTOUT_D / 2.0,
+        C.WALL + 0.2,
+        (cx, cy, -0.1),
         (0.0, 0.0, 1.0),
     )
-    for offset in C.REAR_GRILLE_BAR_X_OFFSETS:
-        bar = box_at(
+    return box_at(0.0, 0.0, 0.0, PANEL_W, PANEL_H, C.WALL).cut(opening)
+
+
+def rear_grille_bar_shapes() -> tuple[cq.Workplane, ...]:
+    """Continuous grille bars with deliberate overlap into both circular lands."""
+
+    cx, cy = rear_fan_center_local()
+    grille_radius = C.REAR_FAN_CUTOUT_D / 2.0 + C.REAR_GRILLE_RING_EXTRA
+    disk = cylinder_at(grille_radius, C.WALL, (cx, cy, 0.0), (0.0, 0.0, 1.0))
+    return tuple(
+        box_at(
             cx + offset - C.GRILLE_BAR / 2.0,
-            cy - C.REAR_FAN_CUTOUT_D / 2.0,
+            cy - grille_radius,
             0.0,
             C.GRILLE_BAR,
-            C.REAR_FAN_CUTOUT_D,
+            2.0 * grille_radius,
             C.WALL,
-        )
-        shape = shape.union(bar.intersect(disk))
+        ).intersect(disk)
+        for offset in C.REAR_GRILLE_BAR_X_OFFSETS
+    )
 
-    half = C.REAR_FAN_HOLE_SPACING / 2.0
-    for x in (cx - half, cx + half):
-        for y in (cy - half, cy + half):
-            shape = shape.cut(
-                cylinder_at(C.FAN_MOUNT_HOLE_D / 2.0, C.WALL + 0.2, (x, y, -0.1), (0.0, 0.0, 1.0))
-            )
 
-    # Low-voltage cable exits. The complete cover withdraws rearward for service.
-    openings = (
+def rear_panel_service_opening_cutters() -> tuple[cq.Workplane, ...]:
+    """Chamfered cable/service openings retained by the grille redesign."""
+
+    return (
         chamfered_slot_cutter(
             C.REAR_LOW_SLOT_L,
             C.REAR_LOW_SLOT_W,
@@ -105,7 +104,37 @@ def make_rear_panel() -> cq.Workplane:
             90.0,
         ),
     )
-    for opening_shape in openings:
+
+
+def _edge_tongues(shape: cq.Workplane) -> cq.Workplane:
+    usable = PANEL_H - 2.0 * C.PANEL_TONGUE_SEGMENT_H
+    step = usable / max(C.PANEL_TONGUE_COUNT - 1, 1)
+    for index in range(C.PANEL_TONGUE_COUNT):
+        y = index * step
+        shape = shape.union(
+            box_at(-C.PANEL_EDGE_TONGUE, y, 0.0, C.PANEL_EDGE_TONGUE, C.PANEL_TONGUE_SEGMENT_H, C.WALL)
+        )
+        shape = shape.union(
+            box_at(PANEL_W, y, 0.0, C.PANEL_EDGE_TONGUE, C.PANEL_TONGUE_SEGMENT_H, C.WALL)
+        )
+    return shape
+
+
+def make_rear_panel() -> cq.Workplane:
+    shape = rear_panel_airflow_frame()
+    cx, cy = rear_fan_center_local()
+    for bar in rear_grille_bar_shapes():
+        shape = shape.union(bar)
+
+    half = C.REAR_FAN_HOLE_SPACING / 2.0
+    for x in (cx - half, cx + half):
+        for y in (cy - half, cy + half):
+            shape = shape.cut(
+                cylinder_at(C.FAN_MOUNT_HOLE_D / 2.0, C.WALL + 0.2, (x, y, -0.1), (0.0, 0.0, 1.0))
+            )
+
+    # Low-voltage cable exits. The complete cover withdraws rearward for service.
+    for opening_shape in rear_panel_service_opening_cutters():
         shape = shape.cut(opening_shape)
     return _edge_tongues(shape).clean()
 
