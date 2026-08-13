@@ -2,7 +2,7 @@
 
 This repository is an executable CadQuery project for a modular, FDM-printable mini-NAS. It is configured for two UGREEN 50422 / US222 drive enclosures, a Raspberry Pi 5 in a provisional GeeekPi metal case, a provisional UGREEN 25851 USB hub, a 120 mm front intake fan, and a measured 140 mm rear exhaust fan.
 
-The build creates real solids rather than a rendering-only mock-up: individual STEP/STL print files, named assembled/exploded/checking STEP models, fit coupons, automated geometry reports, and PNG previews.
+The build creates real solids rather than a rendering-only mock-up: individual STEP/STL print files, named assembled/exploded/checking STEP models, fit coupons, automated geometry reports, and PNG previews. The individual STL is the manufacturing source of truth: every placed printed instance is hard-gated to reach its final pose by rotation and translation only, never by an assembly-only reflection.
 
 ## Current configured envelope
 
@@ -74,6 +74,7 @@ reports/
   printability.md
   clearance_report.md
   hdd_keeper_retention_test_validation.md
+REPRINT_REQUIRED.md         # compatibility/reprint decision after the production audit
 ```
 
 The assembly, exploded, and cutaway `NAS_Internal_Inspection` STL files are disconnected inspection models containing printed and hardware solids. The cutaway omits the front, right side, and top shell modules to expose the internal relationships. Do not slice these inspection models as one print job. Use the individual STL files in the quantities listed in the dimension report.
@@ -97,7 +98,9 @@ The 120 mm fan occupies the front/lower-middle region and blows rearward. Each H
 
 The Pi sits above the drives and entirely ahead of the transverse structural C-frame. Air continues through the large frame opening into the rear cable chamber, then leaves through the centered 140 mm exhaust and passive base/side/top vents. The rear fan sits outside the original enclosure body on a shallow printed spacer/guard, preserving the fixed hub and cable chamber while keeping loose leads clear of the rotor.
 
-The hub mounts vertically on a slotted rail carrier with a positive bottom stop and two strap stations in the right-rear chamber. Its four provisional rear-facing USB plug envelopes pass through a chamfered rear service opening, including two explicitly modeled fan USB-adapter bodies. If physical measurement shows the real port face differs, change the hub/port parameters before printing.
+The hub mounts vertically on a slotted rail carrier with a positive bottom stop, two strap stations, and two full-width M3 bearing bridges in the right-rear chamber. Only `right_side_rear` has the matching carrier holes. Its four provisional rear-facing USB plug envelopes pass through a chamfered rear service opening, including two explicitly modeled fan USB-adapter bodies. If physical measurement shows the real port face differs, change the hub/port parameters before printing.
+
+The four side modules are physical production hands before export. `assembly.py` places them, both top modules, and the USB-hub carrier using proper rotations and translations only. An earlier left-rear print with two unused hub holes remains compatible; the current left-rear source simply omits those holes.
 
 ## Assembly and service order
 
@@ -144,7 +147,9 @@ The build checks every production and fit-test model in its preferred orientatio
 
 Every printable STL receives three independent hard gates in `reports/printability.md`: **MANIFOLD**, **PRINT BED**, and **NON-ZERO VOLUME**. The manifold audit checks connected regions, welded edge incidence, shared-edge winding, vertex-link topology, stored facet normals, degenerate and duplicate triangles, and the validity of the source BRep. Bounds, signed mesh volume, source/STEP volume identity, and the exact expected individual-STL inventory are also verified. Any failed gate makes `build.py` return a non-zero result.
 
-The clearance suite checks printed-part self-intersections, hardware and cable volumes against printed parts, unrelated cross-system cable conflicts, intended endpoint continuity, positive fan/tray gaps, rear-wall route traversal, keyed mechanical contacts, loaded-HDD support polygons after panel removal, and sampled HDD/Pi/side/rear-cover service sweeps with only explicitly removable or unplugged items excluded. Details are in the three Markdown reports.
+`PRINTED_PART_ASSEMBLY_IDENTITY` separately reopens every actual production STL and registers every placed instance using only the 24 proper axis-aligned rotations plus translation. Bidirectional surface distance, volume, area, and dimensions must match the placed production source. A determinant -1-only match is reported as `REFLECTION REQUIRED` and is fatal. The gate also rejects identical left/right side exports and verifies the intended physical side-hand relationship.
+
+The clearance suite checks printed-part self-intersections, hardware and cable volumes against printed parts, unrelated cross-system cable conflicts, intended endpoint continuity, positive fan/tray gaps, rear-wall route traversal, all 16 simultaneous end-panel tongue engagements, all 12 physical side/frame keys, right-only hub fastener ownership and bearing, keyed mechanical contacts, loaded-HDD support polygons after panel removal, and sampled HDD/Pi/right-panel/right-spine/rear-cover service sweeps with only explicitly removable or unplugged items excluded. Details are in the three Markdown reports.
 
 ## Measurement cautions
 

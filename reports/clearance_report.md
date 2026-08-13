@@ -1,6 +1,6 @@
 # Clearance and collision report
 
-Summary: **150/150 checks passed**.
+Summary: **154/154 checks passed**.
 
 Boolean intersections larger than 0.10 mm³ are failures except for the two explicitly bounded, coupon-calibrated HDD keeper friction beads. Zero-volume support contact is intentional.
 
@@ -125,6 +125,9 @@ Boolean intersections larger than 0.10 mm³ are failures except for the two expl
 - **PASS** — Mechanical contact: foot_2 / base_front: Minimum surface distance 0.000 mm.
 - **PASS** — Mechanical contact: foot_3 / base_rear: Minimum surface distance 0.000 mm.
 - **PASS** — Mechanical contact: foot_4 / base_rear: Minimum surface distance 0.000 mm.
+- **PASS** — Simultaneous front/rear panel engagement with both side hands: All 16 interrupted tongue/groove interfaces are present and clear by 0.20 mm.
+- **PASS** — Physical side-to-mid-frame key engagement: All 12 physical side tabs are contained in their exported owner and enter the intended frame receiver within 0.20 mm.
+- **PASS** — Right-only USB-hub fastener ownership and carrier bearing: Both M3 axes pass through the right rear and slotted carrier bridges with positive surrounding bearing material; the left rear retains solid wall.
 - **PASS** — Mechanical contact: USB hub bottom retention: Minimum surface distance 0.000 mm.
 - **PASS** — Mechanical contact: 120 mm fan panel seating: Minimum surface distance 0.000 mm.
 - **PASS** — Mechanical contact: Rear spacer to panel seating: Minimum surface distance 0.000 mm.
@@ -132,6 +135,7 @@ Boolean intersections larger than 0.10 mm³ are failures except for the two expl
 - **PASS** — HDD lower post-removal support polygon: HDD center (73.0, 131.3); fixed/left support polygon ((12.35, 60.0), (133.65, 31.549999999999997), (133.65, 231.05), (12.35, 205.0)).
 - **PASS** — HDD upper post-removal support polygon: HDD center (73.0, 131.3); fixed/left support polygon ((12.35, 60.0), (133.65, 31.549999999999997), (133.65, 231.05), (12.35, 205.0)).
 - **PASS** — Right-front side-panel removal after Pi tray removal: 67 rigid-body positions checked through (1.0, 0.0, 0.0) x 20.0 mm.
+- **PASS** — Right mid-frame spine removal after both right panels: 67 rigid-body positions checked through (1.0, 0.0, 0.0) x 20.0 mm.
 - **PASS** — Right-rear side-panel and unplugged hub-carrier removal: 67 rigid-body positions checked through (1.0, 0.0, 0.0) x 20.0 mm.
 - **PASS** — Rear cable-cover, fan, and guard rearward removal: 80 rigid-body positions checked through (0.0, 1.0, 0.0) x 80.0 mm.
 - **PASS** — Rear-wall traversal: Pi_port_and_route_clearance: Route reaches Y=292.10 mm past rear wall Y=291.10 mm.

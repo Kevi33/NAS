@@ -46,6 +46,7 @@ from src.preview import render_stl
 from src.validation import (
     CheckResult,
     clearance_checks,
+    printed_part_assembly_identity_checks,
     printability_checks,
     step_artifact_check,
     stl_inventory_check,
@@ -371,9 +372,11 @@ def _run_selective_build() -> int:
 
     print("[4/6] Validating all production and existing fit-test STL/STEP artifacts ...")
     production_checks, production_rows = printability_checks(parts, STL_DIR, STEP_DIR)
+    identity_checks = printed_part_assembly_identity_checks(parts, placed, STL_DIR)
     print_checks: list[CheckResult] = [
         stl_inventory_check(parts, STL_DIR),
         *production_checks,
+        *identity_checks,
     ]
     print_rows = list(production_rows)
     fit_checks, fit_rows = printability_checks(fit_parts, FIT_DIR, FIT_DIR)
@@ -430,6 +433,10 @@ def _run_selective_build() -> int:
     print(f"INDIVIDUAL STL PRINT BED: {bed_count}/{len(production_rows)} PASS")
     print(f"INDIVIDUAL STL NON-ZERO VOLUME: {volume_count}/{len(production_rows)} PASS")
     print(f"PRINT/EXPORT CHECKS: {len(print_checks) - len(failed_print)}/{len(print_checks)} PASS")
+    print(
+        "PRINTED_PART_ASSEMBLY_IDENTITY: "
+        f"{sum(check.passed for check in identity_checks)}/{len(identity_checks)} PASS"
+    )
     print(
         f"CLEARANCE CHECKS: "
         f"{len(clearance_results) - len(failed_clearance)}/{len(clearance_results)} PASS"

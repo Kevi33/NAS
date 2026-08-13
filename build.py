@@ -22,6 +22,7 @@ from src.fit_tests import fit_test_models
 from src.preview import render_stl
 from src.validation import (
     clearance_checks,
+    printed_part_assembly_identity_checks,
     printability_checks,
     stl_inventory_check,
     write_clearance_report,
@@ -174,9 +175,17 @@ def main() -> int:
         _export_assemblies(placed, standard_refs, clearance_refs)
         preview_warnings = _render_previews()
 
-        print("[5/6] Validating source, STL mesh, STEP, and print-bed geometry ...")
+        print(
+            "[5/6] Validating source, STL mesh, STEP, print-bed, and "
+            "printed-part assembly identity ..."
+        )
         production_checks, production_rows = printability_checks(parts, STL_DIR, STEP_DIR)
-        print_checks = [stl_inventory_check(parts, STL_DIR), *production_checks]
+        identity_checks = printed_part_assembly_identity_checks(parts, placed, STL_DIR)
+        print_checks = [
+            stl_inventory_check(parts, STL_DIR),
+            *production_checks,
+            *identity_checks,
+        ]
         print_rows = list(production_rows)
         fit_checks, fit_rows = printability_checks(fit_parts, FIT_DIR, FIT_DIR)
         print_checks.extend(fit_checks)
@@ -248,6 +257,11 @@ def main() -> int:
         print(f"INDIVIDUAL STL PRINT BED: {bed_count}/{len(production_rows)} PASS")
         print(f"INDIVIDUAL STL NON-ZERO VOLUME: {volume_count}/{len(production_rows)} PASS")
         print(f"PRINT/EXPORT CHECKS: {len(print_checks) - len(failed_print)}/{len(print_checks)} PASS")
+        identity_passed = sum(check.passed for check in identity_checks)
+        print(
+            "PRINTED_PART_ASSEMBLY_IDENTITY: "
+            f"{identity_passed}/{len(identity_checks)} PASS"
+        )
         print(f"CLEARANCE CHECKS: {len(clearance_results) - len(failed_clearance)}/{len(clearance_results)} PASS")
         if preview_warnings:
             for warning in preview_warnings:

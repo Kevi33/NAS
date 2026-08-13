@@ -30,12 +30,26 @@ def _place_side_left(shape: cq.Workplane, y: float) -> cq.Workplane:
 
 
 def _place_side_right(shape: cq.Workplane, y: float) -> cq.Workplane:
-    mirrored = shape.mirror("XY")
+    """Place an already right-handed production part using a proper transform."""
     return (
-        mirrored.rotate((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 90.0)
+        shape.rotate((0.0, 0.0, 0.0), (0.0, 1.0, 0.0), 180.0)
+        .rotate((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 90.0)
         .rotate((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), 90.0)
         .translate((C.NAS_EXTERNAL_W, y, C.WALL))
     )
+
+
+def _place_top(shape: cq.Workplane, y: float) -> cq.Workplane:
+    """Turn a printed top over with a proper 180 degree rotation.
+
+    The top geometry is symmetric about the enclosure X center plane. Rotating
+    about Y therefore produces the former underside-up pose without relying on
+    an impossible assembly-only reflection.
+    """
+
+    return shape.rotate(
+        (0.0, 0.0, 0.0), (0.0, 1.0, 0.0), 180.0
+    ).translate((C.NAS_EXTERNAL_W, y, C.NAS_BODY_H))
 
 
 def _place_end_panel(shape: cq.Workplane, rear_panel: bool = False) -> cq.Workplane:
@@ -58,8 +72,8 @@ def placed_printable_parts(parts: dict[str, PrintablePart] | None = None) -> dic
     add("base_front", "base_front", parts["base_front"].shape)
     add("base_rear", "base_rear", parts["base_rear"].shape.translate((0.0, C.MID_FRAME_REAR_Y, 0.0)))
 
-    add("top_service_lid", "top_service_lid", parts["top_service_lid"].shape.mirror("XY").translate((0.0, 0.0, C.NAS_BODY_H)))
-    add("top_rear", "top_rear", parts["top_rear"].shape.mirror("XY").translate((0.0, C.TOP_REAR_FRONT_Y, C.NAS_BODY_H)))
+    add("top_service_lid", "top_service_lid", _place_top(parts["top_service_lid"].shape, 0.0))
+    add("top_rear", "top_rear", _place_top(parts["top_rear"].shape, C.TOP_REAR_FRONT_Y))
 
     add("left_side_front", "left_side_front", _place_side_left(parts["left_side_front"].shape, 0.0))
     add("left_side_rear", "left_side_rear", _place_side_left(parts["left_side_rear"].shape, C.MID_FRAME_REAR_Y))
@@ -104,11 +118,18 @@ def placed_printable_parts(parts: dict[str, PrintablePart] | None = None) -> dic
     mount_y = C.USB_HUB_Y - C.USB_HUB_CLEARANCE - C.HUB_MOUNT_EDGE
     mount_z = C.USB_HUB_Z - C.USB_HUB_CLEARANCE - C.HUB_MOUNT_EDGE
     mount_x = C.NAS_EXTERNAL_W - C.WALL
+    # Turn the carrier over by a physical half-turn about local Y. The carrier
+    # is symmetric across its local X center plane, so this is exactly the
+    # former back-to-wall pose without an assembly-only reflection.
     hub_mount = (
-        parts["usb_hub_mount"].shape.mirror("XY")
+        parts["usb_hub_mount"].shape.rotate(
+            (0.0, 0.0, 0.0),
+            (0.0, 1.0, 0.0),
+            180.0,
+        )
         .rotate((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 90.0)
         .rotate((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), 90.0)
-        .translate((mount_x, mount_y, mount_z))
+        .translate((mount_x, mount_y + C.HUB_MOUNT_W, mount_z))
     )
     add("usb_hub_mount", "usb_hub_mount", hub_mount, True)
     # The source guard grows along +Z; this transform makes that depth extend

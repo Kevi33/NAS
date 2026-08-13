@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from itertools import combinations
+from itertools import combinations, permutations, product
 import math
 from pathlib import Path
 import re
@@ -16,12 +16,14 @@ from OCP.BRepCheck import BRepCheck_Analyzer
 
 import config as C
 from . import rear as rear_geometry
+from . import side_panel_common as side_geometry
 from .common import (
     PlacedPart,
     PrintablePart,
     all_axis_permutations,
     bbox_limits,
     bbox_tuple,
+    cylinder_at,
     shape_value,
     valid_volume,
 )
@@ -37,6 +39,11 @@ class CheckResult:
 
 Vector3 = tuple[float, float, float]
 Facet = tuple[Vector3, tuple[Vector3, Vector3, Vector3]]
+Matrix3 = tuple[
+    tuple[float, float, float],
+    tuple[float, float, float],
+    tuple[float, float, float],
+]
 
 
 @dataclass(frozen=True)
@@ -61,6 +68,19 @@ class STLMeshStats:
     vtk_regions: int
     vtk_bad_edges: int
     vtk_volume: float
+
+
+@dataclass(frozen=True)
+class RigidMeshMatch:
+    """Best axis-aligned registration of an exported mesh to assembly geometry."""
+
+    passed: bool
+    surface_error: float
+    volume_error: float
+    area_error: float
+    determinant: int
+    matrix: Matrix3 | None
+    translation: Vector3 | None
 
 
 def _fmt_dims(dims: tuple[float, float, float]) -> str:
@@ -524,6 +544,452 @@ def stl_mesh_stats(path: Path) -> STLMeshStats:
         vtk_bad_edges=vtk_bad_edges,
         vtk_volume=vtk_volume,
     )
+
+
+IDENTITY_SURFACE_TOLERANCE = max(0.05, 1.5 * C.STL_LINEAR_TOLERANCE)
+IDENTITY_DIMENSION_TOLERANCE = max(0.05, 1.5 * C.STL_LINEAR_TOLERANCE)
+
+
+def _matrix_determinant(matrix: Matrix3) -> int:
+    determinant = (
+        matrix[0][0] * (matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1])
+        - matrix[0][1] * (matrix[1][0] * matrix[2][2] - matrix[1][2] * matrix[2][0])
+        + matrix[0][2] * (matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0])
+    )
+    return int(round(determinant))
+
+
+def _signed_axis_matrices(determinant: int) -> tuple[Matrix3, ...]:
+    """Return the 24 axis-aligned rotations or reflections with the requested determinant."""
+    matrices: list[Matrix3] = []
+    for permutation in permutations(range(3)):
+        for signs in product((-1.0, 1.0), repeat=3):
+            rows: list[tuple[float, float, float]] = []
+            for output_axis, input_axis in enumerate(permutation):
+                row = [0.0, 0.0, 0.0]
+                row[input_axis] = signs[output_axis]
+                rows.append(tuple(row))  # type: ignore[arg-type]
+            matrix: Matrix3 = tuple(rows)  # type: ignore[assignment]
+            if _matrix_determinant(matrix) == determinant:
+                matrices.append(matrix)
+    identity: Matrix3 = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
+    matrices.sort(key=lambda candidate: candidate != identity)
+    return tuple(matrices)
+
+
+PROPER_AXIS_ROTATIONS = _signed_axis_matrices(1)
+IMPROPER_AXIS_TRANSFORMS = _signed_axis_matrices(-1)
+LOCAL_SIDE_MIRROR: Matrix3 = ((-1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
+
+
+def _apply_matrix(matrix: Matrix3, point: Vector3) -> Vector3:
+    return tuple(
+        sum(matrix[row][column] * point[column] for column in range(3))
+        for row in range(3)
+    )  # type: ignore[return-value]
+
+
+def _mesh_polydata(vertices: list[Vector3], faces: list[tuple[int, int, int]]):
+    """Create VTK triangle data without repairing or remeshing the geometry."""
+    import vtk
+
+    points = vtk.vtkPoints()
+    points.SetDataTypeToDouble()
+    points.SetNumberOfPoints(len(vertices))
+    for index, vertex in enumerate(vertices):
+        points.SetPoint(index, *vertex)
+    cells = vtk.vtkCellArray()
+    for face in faces:
+        cells.InsertNextCell(3)
+        for vertex_index in face:
+            cells.InsertCellPoint(vertex_index)
+    result = vtk.vtkPolyData()
+    result.SetPoints(points)
+    result.SetPolys(cells)
+    result.BuildCells()
+    return result
+
+
+def _stl_identity_mesh(path: Path) -> tuple[object, float]:
+    facets = _read_stl_facets(path)
+    triangles = [vertices for _, vertices in facets]
+    vertices, faces = _weld_vertices(triangles)
+    signed_volume = math.fsum(
+        _dot(triangle[0], _cross(triangle[1], triangle[2])) / 6.0
+        for triangle in triangles
+    )
+    return _mesh_polydata(vertices, faces), abs(signed_volume)
+
+
+def _shape_identity_mesh(shape: cq.Workplane | cq.Shape) -> object:
+    vertices, triangles = shape_value(shape).tessellate(
+        C.STL_LINEAR_TOLERANCE,
+        C.STL_ANGULAR_TOLERANCE,
+    )
+    mesh_vertices: list[Vector3] = [vertex.toTuple() for vertex in vertices]
+    mesh_faces = [tuple(int(index) for index in triangle) for triangle in triangles]
+    return _mesh_polydata(mesh_vertices, mesh_faces)
+
+
+def _polydata_area(polydata: object) -> float:
+    import vtk
+
+    mass = vtk.vtkMassProperties()
+    mass.SetInputData(polydata)
+    mass.Update()
+    return float(mass.GetSurfaceArea())
+
+
+def _polydata_samples(polydata: object) -> list[Vector3]:
+    samples: list[Vector3] = [
+        tuple(float(value) for value in polydata.GetPoint(index))
+        for index in range(polydata.GetNumberOfPoints())
+    ]
+    for index in range(polydata.GetNumberOfCells()):
+        cell = polydata.GetCell(index)
+        count = cell.GetNumberOfPoints()
+        if count:
+            samples.append(
+                tuple(
+                    sum(polydata.GetPoint(cell.GetPointId(point))[axis] for point in range(count))
+                    / count
+                    for axis in range(3)
+                )  # type: ignore[arg-type]
+            )
+    return samples
+
+
+def _transformed_bounds(bounds: tuple[float, ...], matrix: Matrix3) -> tuple[float, ...]:
+    corners = [
+        _apply_matrix(matrix, (x, y, z))
+        for x in (bounds[0], bounds[1])
+        for y in (bounds[2], bounds[3])
+        for z in (bounds[4], bounds[5])
+    ]
+    return (
+        min(point[0] for point in corners),
+        max(point[0] for point in corners),
+        min(point[1] for point in corners),
+        max(point[1] for point in corners),
+        min(point[2] for point in corners),
+        max(point[2] for point in corners),
+    )
+
+
+def _transform_polydata(polydata: object, matrix: Matrix3, translation: Vector3) -> object:
+    import vtk
+
+    transformed = vtk.vtkPolyData()
+    transformed.DeepCopy(polydata)
+    points = vtk.vtkPoints()
+    points.SetDataTypeToDouble()
+    points.SetNumberOfPoints(polydata.GetNumberOfPoints())
+    for index in range(polydata.GetNumberOfPoints()):
+        rotated = _apply_matrix(matrix, polydata.GetPoint(index))
+        points.SetPoint(index, *(rotated[axis] + translation[axis] for axis in range(3)))
+    transformed.SetPoints(points)
+    transformed.BuildCells()
+    return transformed
+
+
+def _maximum_surface_distance(
+    samples: list[Vector3],
+    target: object,
+    stop_above: float | None = None,
+) -> float:
+    import vtk
+
+    distance = vtk.vtkImplicitPolyDataDistance()
+    distance.SetInput(target)
+    maximum = 0.0
+    for sample in samples:
+        maximum = max(maximum, abs(float(distance.EvaluateFunction(sample))))
+        if stop_above is not None and maximum > stop_above:
+            break
+    return maximum
+
+
+def _rigid_mesh_match(
+    exported_mesh: object,
+    expected_mesh: object,
+    exported_volume: float,
+    expected_volume: float,
+    matrices: tuple[Matrix3, ...],
+) -> RigidMeshMatch:
+    """Register using only signed axis transforms plus translation; never scale or deform."""
+    exported_area = _polydata_area(exported_mesh)
+    expected_area = _polydata_area(expected_mesh)
+    volume_error = abs(exported_volume - expected_volume)
+    area_error = abs(exported_area - expected_area)
+    volume_ok = volume_error <= max(0.50, expected_volume * 0.002)
+    area_ok = area_error <= max(0.50, expected_area * 0.005)
+    expected_bounds = expected_mesh.GetBounds()
+    expected_dimensions = tuple(
+        expected_bounds[axis * 2 + 1] - expected_bounds[axis * 2]
+        for axis in range(3)
+    )
+    exported_bounds = exported_mesh.GetBounds()
+    exported_samples = _polydata_samples(exported_mesh)
+    expected_samples = _polydata_samples(expected_mesh)
+    best_error = float("inf")
+    best_matrix: Matrix3 | None = None
+    best_translation: Vector3 | None = None
+
+    for matrix in matrices:
+        rotated_bounds = _transformed_bounds(exported_bounds, matrix)
+        rotated_dimensions = tuple(
+            rotated_bounds[axis * 2 + 1] - rotated_bounds[axis * 2]
+            for axis in range(3)
+        )
+        if any(
+            abs(rotated_dimensions[axis] - expected_dimensions[axis])
+            > IDENTITY_DIMENSION_TOLERANCE
+            for axis in range(3)
+        ):
+            continue
+        translation: Vector3 = tuple(
+            (expected_bounds[axis * 2] + expected_bounds[axis * 2 + 1]) / 2.0
+            - (rotated_bounds[axis * 2] + rotated_bounds[axis * 2 + 1]) / 2.0
+            for axis in range(3)
+        )  # type: ignore[assignment]
+        transformed_samples = [
+            tuple(
+                coordinate + translation[axis]
+                for axis, coordinate in enumerate(_apply_matrix(matrix, sample))
+            )
+            for sample in exported_samples
+        ]
+        forward_error = _maximum_surface_distance(
+            transformed_samples,
+            expected_mesh,
+            IDENTITY_SURFACE_TOLERANCE,
+        )
+        candidate_error = forward_error
+        if forward_error <= IDENTITY_SURFACE_TOLERANCE:
+            candidate_mesh = _transform_polydata(exported_mesh, matrix, translation)
+            reverse_error = _maximum_surface_distance(
+                expected_samples,
+                candidate_mesh,
+                IDENTITY_SURFACE_TOLERANCE,
+            )
+            candidate_error = max(forward_error, reverse_error)
+        if candidate_error < best_error:
+            best_error = candidate_error
+            best_matrix = matrix
+            best_translation = translation
+        if (
+            candidate_error <= IDENTITY_SURFACE_TOLERANCE
+            and volume_ok
+            and area_ok
+        ):
+            return RigidMeshMatch(
+                True,
+                candidate_error,
+                volume_error,
+                area_error,
+                _matrix_determinant(matrix),
+                matrix,
+                translation,
+            )
+
+    determinant = _matrix_determinant(matrices[0]) if matrices else 0
+    return RigidMeshMatch(
+        False,
+        best_error,
+        volume_error,
+        area_error,
+        determinant,
+        best_matrix,
+        best_translation,
+    )
+
+
+def _matrix_label(matrix: Matrix3 | None) -> str:
+    if matrix is None:
+        return "no bounds-compatible orientation"
+    axis_names = ("X", "Y", "Z")
+    labels: list[str] = []
+    for row in matrix:
+        input_axis = next(index for index, value in enumerate(row) if value)
+        sign = "+" if row[input_axis] > 0.0 else "-"
+        labels.append(f"{sign}{axis_names[input_axis]}")
+    return "(" + ", ".join(labels) + ")"
+
+
+def printed_part_assembly_identity_checks(
+    parts: dict[str, PrintablePart],
+    placed: dict[str, PlacedPart],
+    stl_directory: Path,
+) -> list[CheckResult]:
+    """Hard-gate actual production STLs against every final placed printed instance.
+
+    Assembly placements in this project are axis-aligned.  The 24 determinant-+1
+    signed-axis matrices cover every associated proper rotation.  Determinant--1
+    candidates are evaluated only to diagnose a forbidden assembly-only mirror.
+    """
+    checks: list[CheckResult] = []
+    mesh_cache: dict[str, tuple[object, float]] = {}
+    instance_passes: dict[str, bool] = {}
+
+    def exported(source_name: str) -> tuple[object, float]:
+        if source_name not in mesh_cache:
+            path = stl_directory / f"{source_name}.stl"
+            if not path.exists():
+                raise FileNotFoundError(f"missing production STL: {path.name}")
+            mesh_cache[source_name] = _stl_identity_mesh(path)
+        return mesh_cache[source_name]
+
+    placed_sources = {item.source_name for item in placed.values()}
+    for source_name in sorted(set(parts) - placed_sources):
+        checks.append(
+            CheckResult(
+                f"PRINTED_PART_ASSEMBLY_IDENTITY: {source_name}",
+                False,
+                "Production source has no placed assembly instance to audit.",
+            )
+        )
+
+    for instance_name, item in placed.items():
+        label = f"PRINTED_PART_ASSEMBLY_IDENTITY: {instance_name} [{item.source_name}]"
+        try:
+            exported_mesh, exported_volume = exported(item.source_name)
+            expected_mesh = _shape_identity_mesh(item.shape)
+            proper = _rigid_mesh_match(
+                exported_mesh,
+                expected_mesh,
+                exported_volume,
+                valid_volume(item.shape),
+                PROPER_AXIS_ROTATIONS,
+            )
+            if proper.passed:
+                translation = proper.translation or (0.0, 0.0, 0.0)
+                detail = (
+                    "Actual STL matches the placed source by a proper rigid transform "
+                    f"det=+1 {_matrix_label(proper.matrix)}, translation "
+                    f"({translation[0]:.3f}, {translation[1]:.3f}, {translation[2]:.3f}) mm; "
+                    f"bidirectional surface error {proper.surface_error:.4f} mm, "
+                    f"volume delta {proper.volume_error:.3f} mm³."
+                )
+                passed = True
+            else:
+                improper = _rigid_mesh_match(
+                    exported_mesh,
+                    expected_mesh,
+                    exported_volume,
+                    valid_volume(item.shape),
+                    IMPROPER_AXIS_TRANSFORMS,
+                )
+                passed = False
+                if improper.passed:
+                    detail = (
+                        "REFLECTION REQUIRED: the STL matches only with determinant -1 "
+                        f"{_matrix_label(improper.matrix)} (surface error "
+                        f"{improper.surface_error:.4f} mm). A printed part cannot receive "
+                        "this assembly-only mirror."
+                    )
+                else:
+                    surface = (
+                        f"{proper.surface_error:.4f} mm"
+                        if math.isfinite(proper.surface_error)
+                        else "unavailable"
+                    )
+                    detail = (
+                        "No proper rigid match exists; best proper surface error "
+                        f"{surface}, volume delta {proper.volume_error:.3f} mm³, "
+                        f"area delta {proper.area_error:.3f} mm². The STL is stale or "
+                        "differs from its placed production source."
+                    )
+            instance_passes[instance_name] = passed
+            checks.append(CheckResult(label, passed, detail))
+        except Exception as exc:
+            instance_passes[instance_name] = False
+            checks.append(CheckResult(label, False, f"Identity audit could not run: {exc}"))
+
+    for left_name, right_name in (
+        ("left_side_front", "right_side_front"),
+        ("left_side_rear", "right_side_rear"),
+    ):
+        pair_label = left_name.removeprefix("left_side_")
+        try:
+            left_mesh, left_volume = exported(left_name)
+            right_mesh, right_volume = exported(right_name)
+            congruent = _rigid_mesh_match(
+                left_mesh,
+                right_mesh,
+                left_volume,
+                right_volume,
+                PROPER_AXIS_ROTATIONS,
+            )
+            distinct = not congruent.passed
+            checks.append(
+                CheckResult(
+                    f"PRINTED_PART_ASSEMBLY_IDENTITY: {pair_label} side exports distinct",
+                    distinct,
+                    (
+                        "Left and right exports are physically distinct; they are not "
+                        "proper-rigid copies."
+                        if distinct
+                        else "Left and right exports are the same physical mesh up to rotation/translation."
+                    ),
+                )
+            )
+        except Exception as exc:
+            checks.append(
+                CheckResult(
+                    f"PRINTED_PART_ASSEMBLY_IDENTITY: {pair_label} side exports distinct",
+                    False,
+                    f"Side-pair audit could not run: {exc}",
+                )
+            )
+
+    try:
+        left_mesh, left_volume = exported("left_side_front")
+        right_mesh, right_volume = exported("right_side_front")
+        mirror_pair = _rigid_mesh_match(
+            left_mesh,
+            right_mesh,
+            left_volume,
+            right_volume,
+            (LOCAL_SIDE_MIRROR,),
+        )
+        checks.append(
+            CheckResult(
+                "PRINTED_PART_ASSEMBLY_IDENTITY: front side physical mirror pair",
+                mirror_pair.passed,
+                (
+                    "The exported front modules are the intended longitudinal physical mirror pair "
+                    f"(surface error {mirror_pair.surface_error:.4f} mm)."
+                    if mirror_pair.passed
+                    else "The exported front modules do not form the intended longitudinal physical mirror pair."
+                ),
+            )
+        )
+    except Exception as exc:
+        checks.append(
+            CheckResult(
+                "PRINTED_PART_ASSEMBLY_IDENTITY: front side physical mirror pair",
+                False,
+                f"Mirror-pair audit could not run: {exc}",
+            )
+        )
+
+    rear_instances_ok = instance_passes.get("left_side_rear", False) and instance_passes.get(
+        "right_side_rear", False
+    )
+    checks.append(
+        CheckResult(
+            "PRINTED_PART_ASSEMBLY_IDENTITY: rear side handed counterparts",
+            rear_instances_ok,
+            (
+                "Both physically distinct rear exports independently reach their placed sides "
+                "by proper transforms; exact mirror equality is intentionally not required because "
+                "only the right rear carries USB-hub mounting apertures."
+                if rear_instances_ok
+                else "One or both rear production exports cannot reach the intended assembly side by a proper transform."
+            ),
+        )
+    )
+    return checks
 
 
 def stl_bounds(path: Path) -> tuple[float, float, float]:
@@ -1143,6 +1609,189 @@ def clearance_checks(
             )
         )
 
+    # The complete end panels must engage both physical side hands at once.
+    # Whole-part contact alone is insufficient: it could be satisfied by an
+    # unrelated coplanar edge after a tongue/groove regression.
+    end_interface_failures: list[str] = []
+    tongue_sources = side_geometry.end_panel_tongue_shapes()
+    for panel_name, rearward in (("front_panel", False), ("rear_panel", True)):
+        panel = shape_value(placed[panel_name].shape)
+        placed_tongues = [
+            shape_value(
+                tongue.rotate((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 90.0).translate(
+                    (C.WALL, C.NAS_EXTERNAL_D if rearward else C.WALL, C.WALL)
+                )
+            )
+            for tongue in tongue_sources
+        ]
+        side_names = (
+            ("left_side_rear", "right_side_rear")
+            if rearward
+            else ("left_side_front", "right_side_front")
+        )
+        for side_index, side_name in enumerate(side_names):
+            side = shape_value(placed[side_name].shape)
+            for segment in range(C.PANEL_TONGUE_COUNT):
+                tongue_index = 2 * segment + side_index
+                tongue = placed_tongues[tongue_index]
+                outside_owner = tongue.cut(panel).Volume()
+                overlap = tongue.intersect(side).Volume()
+                distance = tongue.distance(side)
+                if (
+                    outside_owner > 1e-6
+                    or overlap > C.COLLISION_VOLUME_EPS
+                    or abs(distance - C.FIT_CLEARANCE) > 0.01
+                ):
+                    end_interface_failures.append(
+                        f"{panel_name}/{side_name} segment {segment + 1}: "
+                        f"owner residual {outside_owner:.4f} mm³, overlap {overlap:.4f} mm³, "
+                        f"clearance {distance:.3f} mm"
+                    )
+    checks.append(
+        CheckResult(
+            "Simultaneous front/rear panel engagement with both side hands",
+            not end_interface_failures,
+            (
+                f"All {2 * 2 * C.PANEL_TONGUE_COUNT} interrupted tongue/groove interfaces "
+                f"are present and clear by {C.FIT_CLEARANCE:.2f} mm."
+                if not end_interface_failures
+                else "; ".join(end_interface_failures)
+            ),
+        )
+    )
+
+    # Feature-specific checks prove every side seam tab exists in its owner and
+    # enters the intended fixed-frame or removable-spine receiver without a
+    # hidden assembly-only hand conversion.
+    key_failures: list[str] = []
+    side_key_specs = (
+        ("left_side_front", "mid_frame", True, False, 0.0),
+        ("left_side_rear", "mid_frame", False, False, C.MID_FRAME_REAR_Y),
+        ("right_side_front", "mid_frame_right_spine", True, True, 0.0),
+        ("right_side_rear", "mid_frame_right_spine", False, True, C.MID_FRAME_REAR_Y),
+    )
+    for owner_name, receiver_name, front_half, right_hand, y_offset in side_key_specs:
+        owner = shape_value(placed[owner_name].shape)
+        receiver = shape_value(placed[receiver_name].shape)
+        length = C.MID_FRAME_FRONT_Y if front_half else C.NAS_EXTERNAL_D - C.MID_FRAME_REAR_Y
+        for index, tab_source in enumerate(
+            side_geometry.side_joint_tab_shapes(
+                length,
+                front=front_half,
+                right_hand=right_hand,
+            )
+        ):
+            if right_hand:
+                placed_tab = (
+                    tab_source.rotate((0.0, 0.0, 0.0), (0.0, 1.0, 0.0), 180.0)
+                    .rotate((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 90.0)
+                    .rotate((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), 90.0)
+                    .translate((C.NAS_EXTERNAL_W, y_offset, C.WALL))
+                )
+            else:
+                placed_tab = (
+                    tab_source.rotate((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 90.0)
+                    .rotate((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), 90.0)
+                    .translate((0.0, y_offset, C.WALL))
+                )
+            tab = shape_value(placed_tab)
+            outside_owner = tab.cut(owner).Volume()
+            overlap = tab.intersect(receiver).Volume()
+            distance = tab.distance(receiver)
+            if (
+                outside_owner > 1e-6
+                or overlap > C.COLLISION_VOLUME_EPS
+                or distance > C.FIT_CLEARANCE + 0.01
+            ):
+                key_failures.append(
+                    f"{owner_name}/{receiver_name} tab {index + 1}: owner residual "
+                    f"{outside_owner:.4f} mm³, overlap {overlap:.4f} mm³, "
+                    f"receiver distance {distance:.3f} mm"
+                )
+    checks.append(
+        CheckResult(
+            "Physical side-to-mid-frame key engagement",
+            not key_failures,
+            (
+                f"All {4 * len(C.SIDE_JOINT_Z_FRACTIONS)} physical side tabs are contained "
+                f"in their exported owner and enter the intended frame receiver within "
+                f"{C.FIT_CLEARANCE:.2f} mm."
+                if not key_failures
+                else "; ".join(key_failures)
+            ),
+        )
+    )
+
+    # Hub-hole ownership and carrier bearing are checked at the exact two M3
+    # axes. The left rear must retain wall material; the right rear and carrier
+    # must share a clear shaft path surrounded by positive bearing material.
+    hub_fastener_failures: list[str] = []
+    mount_y = C.USB_HUB_Y - C.USB_HUB_CLEARANCE - C.HUB_MOUNT_EDGE
+    mount_z = C.USB_HUB_Z - C.USB_HUB_CLEARANCE - C.HUB_MOUNT_EDGE
+    hole_y = mount_y + C.HUB_MOUNT_W / 2.0
+    shaft_x = C.NAS_EXTERNAL_W - C.WALL - C.HUB_MOUNT_BACK_T - 0.1
+    shaft_length = C.HUB_MOUNT_BACK_T + C.WALL + 0.2
+    left_panel = shape_value(placed["left_side_rear"].shape)
+    right_panel = shape_value(placed["right_side_rear"].shape)
+    hub_carrier = shape_value(placed["usb_hub_mount"].shape)
+    for index, hole_z in enumerate(
+        (mount_z + C.HUB_MOUNT_SLOT_INSET, mount_z + C.HUB_MOUNT_L - C.HUB_MOUNT_SLOT_INSET),
+        start=1,
+    ):
+        shaft = shape_value(
+            cylinder_at(
+                C.M3_CLEARANCE_D / 2.0 - 0.05,
+                shaft_length,
+                (shaft_x, hole_y, hole_z),
+                (1.0, 0.0, 0.0),
+            )
+        )
+        bearing = shape_value(
+            cylinder_at(
+                C.M3_CLEARANCE_D / 2.0 + 0.8,
+                shaft_length,
+                (shaft_x, hole_y, hole_z),
+                (1.0, 0.0, 0.0),
+            )
+        )
+        left_probe = shape_value(
+            cylinder_at(
+                C.M3_CLEARANCE_D / 2.0 - 0.05,
+                C.WALL + 0.2,
+                (-0.1, hole_y, hole_z),
+                (1.0, 0.0, 0.0),
+            )
+        )
+        left_material = left_probe.intersect(left_panel).Volume()
+        right_void = shaft.intersect(right_panel).Volume()
+        carrier_void = shaft.intersect(hub_carrier).Volume()
+        right_bearing = bearing.intersect(right_panel).Volume()
+        carrier_bearing = bearing.intersect(hub_carrier).Volume()
+        if (
+            left_material <= 1.0
+            or right_void > 1e-6
+            or carrier_void > 1e-6
+            or right_bearing <= 1.0
+            or carrier_bearing <= 1.0
+        ):
+            hub_fastener_failures.append(
+                f"station {index}: left material {left_material:.3f} mm³, right shaft "
+                f"residual {right_void:.3f} mm³, carrier shaft residual {carrier_void:.3f} mm³, "
+                f"right/carrier bearing {right_bearing:.3f}/{carrier_bearing:.3f} mm³"
+            )
+    checks.append(
+        CheckResult(
+            "Right-only USB-hub fastener ownership and carrier bearing",
+            not hub_fastener_failures,
+            (
+                "Both M3 axes pass through the right rear and slotted carrier bridges with "
+                "positive surrounding bearing material; the left rear retains solid wall."
+                if not hub_fastener_failures
+                else "; ".join(hub_fastener_failures)
+            ),
+        )
+    )
+
     hardware_contacts = (
         ("USB hub bottom retention", references["USB_hub"].shape, placed["usb_hub_mount"].shape),
         ("120 mm fan panel seating", references["fan_120"].shape, placed["front_panel"].shape),
@@ -1188,6 +1837,14 @@ def clearance_checks(
             placed,
             ("right_side_front",),
             {"top_service_lid", "pi_tray"},
+        )
+    )
+    checks.append(
+        _sampled_removal_check(
+            "Right mid-frame spine removal after both right panels",
+            placed,
+            ("mid_frame_right_spine",),
+            {"right_side_front", "right_side_rear", "usb_hub_mount"},
         )
     )
     checks.append(
@@ -1447,6 +2104,12 @@ def write_printability_report(path: Path, checks: list[CheckResult], rows: list[
         C.PRINT_BED_Y - 2.0 * C.PRINT_BED_EDGE_MARGIN,
         min(C.PRINT_BED_Z, C.PRINT_USABLE_Z),
     )
+    identity_checks = [
+        check
+        for check in checks
+        if check.name.startswith("PRINTED_PART_ASSEMBLY_IDENTITY:")
+    ]
+    identity_passed = sum(check.passed for check in identity_checks)
     lines = [
         "# Printability report",
         "",
@@ -1457,6 +2120,7 @@ def write_printability_report(path: Path, checks: list[CheckResult], rows: list[
         f"{C.PRINT_USABLE_Z:.0f} mm usable-Z limit).",
         "",
         "Every row is a hard build gate. Production geometry remains modular; no parts were merged for the larger bed.",
+        f"PRINTED_PART_ASSEMBLY_IDENTITY summary: **{identity_passed}/{len(identity_checks)} PASS**.",
         "",
         "| Part | STL bbox | MANIFOLD | PRINT BED | NON-ZERO VOLUME | Regions | Triangles | Min triangle area | Orientation | Supports |",
         "|---|---|:---:|:---:|:---:|---:|---:|---:|---|---|",
@@ -1490,6 +2154,7 @@ def write_printability_report(path: Path, checks: list[CheckResult], rows: list[
             "- **MANIFOLD PASS**: valid source BRep; expected connected regions; every raw STL edge used exactly twice with opposite winding; valid vertex links and stored normals; no sliver/degenerate or duplicate triangles; no triangle self-intersections; positive component orientations; independent VTK edge/region agreement.",
             "- **PRINT BED PASS**: exported preferred-orientation STL bounds fit the conservative usable envelope and match source bounds.",
             "- **NON-ZERO VOLUME PASS**: source, signed STL, VTK, and every connected component have positive volume; STL volume matches the source.",
+            "- **PRINTED_PART_ASSEMBLY_IDENTITY PASS**: the actual exported production STL is reopened and matches every placed printed instance using only a determinant-+1 rigid rotation and translation. Any match that requires reflection, or any stale/different export, is a hard failure. Left/right side exports receive additional distinctness and handed-pair checks.",
             "",
             "## Automated results",
             "",

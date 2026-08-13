@@ -4,6 +4,7 @@ import cadquery as cq
 
 import config as C
 from .common import PrintablePart, box_at, cylinder_at
+from .side_panel_common import end_panel_tongue_shapes
 
 
 PANEL_W = C.NAS_EXTERNAL_W - 2.0 * C.WALL
@@ -11,13 +12,8 @@ PANEL_H = C.NAS_BODY_H - 2.0 * C.WALL
 
 
 def _edge_tongues(shape: cq.Workplane) -> cq.Workplane:
-    usable = PANEL_H - 2.0 * C.PANEL_TONGUE_SEGMENT_H
-    step = usable / max(C.PANEL_TONGUE_COUNT - 1, 1)
-    for index in range(C.PANEL_TONGUE_COUNT):
-        y = index * step
-        left = box_at(-C.PANEL_EDGE_TONGUE, y, 0.0, C.PANEL_EDGE_TONGUE, C.PANEL_TONGUE_SEGMENT_H, C.WALL)
-        right = box_at(PANEL_W, y, 0.0, C.PANEL_EDGE_TONGUE, C.PANEL_TONGUE_SEGMENT_H, C.WALL)
-        shape = shape.union(left).union(right)
+    for tongue in end_panel_tongue_shapes():
+        shape = shape.union(tongue)
     return shape
 
 

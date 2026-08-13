@@ -31,6 +31,21 @@ def make_usb_hub_mount() -> cq.Workplane:
             C.HUB_MOUNT_BACK_T,
         )
     )
+    # Full-width back bridges give the two M3 adjustment slots real bearing
+    # material. Without these, both slots lie entirely inside the large center
+    # window and the carrier merely touches the side wall without being
+    # fastenable.
+    for fastener_y in (C.HUB_MOUNT_SLOT_INSET, C.HUB_MOUNT_L - C.HUB_MOUNT_SLOT_INSET):
+        shape = shape.union(
+            box_at(
+                0.0,
+                fastener_y - C.HUB_MOUNT_FASTENER_BRIDGE_W / 2.0,
+                0.0,
+                C.HUB_MOUNT_W,
+                C.HUB_MOUNT_FASTENER_BRIDGE_W,
+                C.HUB_MOUNT_BACK_T,
+            )
+        )
     # Edge lips wrap only the hub corners; all four port faces remain clear.
     for x in (0.0, C.HUB_MOUNT_W - C.HUB_MOUNT_EDGE):
         for y in (0.0, C.HUB_MOUNT_L - C.HUB_MOUNT_END_LIP_L):
@@ -72,7 +87,16 @@ def make_usb_hub_mount() -> cq.Workplane:
             )
     # Long mounting slots permit vertical adjustment after measuring the hub.
     for y in (C.HUB_MOUNT_SLOT_INSET, C.HUB_MOUNT_L - C.HUB_MOUNT_SLOT_INSET):
-        shape = shape.cut(slot_y(12.0, C.M3_CLEARANCE_D, C.HUB_MOUNT_BACK_T + 0.2, C.HUB_MOUNT_W / 2.0, y, -0.1))
+        shape = shape.cut(
+            slot_y(
+                12.0,
+                C.M3_CLEARANCE_D,
+                C.HUB_MOUNT_BACK_T + 0.2,
+                C.HUB_MOUNT_W / 2.0,
+                y,
+                -0.1,
+            )
+        )
     return shape
 
 
