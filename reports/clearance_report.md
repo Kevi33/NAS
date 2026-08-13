@@ -1,6 +1,6 @@
 # Clearance and collision report
 
-Summary: **116/116 checks passed**.
+Summary: **145/145 checks passed**.
 
 Boolean intersections larger than 0.10 mm³ are failures except for the two explicitly bounded, coupon-calibrated HDD keeper friction beads. Zero-volume support contact is intentional.
 
@@ -12,7 +12,7 @@ Boolean intersections larger than 0.10 mm³ are failures except for the two expl
 - **PASS** — Raspberry Pi case clearance: No forbidden intersections.
 - **PASS** — USB hub clearance: No forbidden intersections.
 - **PASS** — 120 mm fan clearance: No forbidden intersections.
-- **PASS** — 80 mm fan clearance: No forbidden intersections.
+- **PASS** — 140 mm fan clearance: No forbidden intersections.
 - **PASS** — HDD lower USB B plug: No forbidden intersections.
 - **PASS** — HDD lower DC plug: No forbidden intersections.
 - **PASS** — HDD upper USB B plug: No forbidden intersections.
@@ -36,21 +36,43 @@ Boolean intersections larger than 0.10 mm³ are failures except for the two expl
 - **PASS** — front fan wire route: No forbidden intersections.
 - **PASS** — rear fan wire route: No forbidden intersections.
 - **PASS** — USB hub host cable route: No forbidden intersections.
+- **PASS** — Rear-stack separation: 140 mm rear fan / USB hub body: Intersection 0.000 mm³; minimum distance 42.800 mm.
+- **PASS** — Rear-stack separation: 140 mm rear fan / USB hub plug field: Intersection 0.000 mm³; minimum distance 4.800 mm.
+- **PASS** — Rear-stack separation: 140 mm rear fan / Raspberry Pi cable route: Intersection 0.000 mm³; minimum distance 9.000 mm.
+- **PASS** — Rear-stack separation: 140 mm rear fan / lower HDD USB-B bend: Intersection 0.000 mm³; minimum distance 18.800 mm.
+- **PASS** — Rear-stack separation: 140 mm rear fan / lower HDD DC bend: Intersection 0.000 mm³; minimum distance 24.800 mm.
+- **PASS** — Rear-stack separation: 140 mm rear fan / lower HDD rear route: Intersection 0.000 mm³; minimum distance 9.552 mm.
+- **PASS** — Rear-stack separation: 140 mm rear fan / upper HDD USB-B bend: Intersection 0.000 mm³; minimum distance 20.201 mm.
+- **PASS** — Rear-stack separation: 140 mm rear fan / upper HDD DC bend: Intersection 0.000 mm³; minimum distance 27.701 mm.
+- **PASS** — Rear-stack separation: 140 mm rear fan / upper HDD rear route: Intersection 0.000 mm³; minimum distance 9.552 mm.
+- **PASS** — Rear-stack separation: 140 mm rear fan / top rear panel: Intersection 0.000 mm³; minimum distance 10.198 mm.
+- **PASS** — Rear-stack separation: 140 mm rear fan / right rear side module: Intersection 0.000 mm³; minimum distance 10.002 mm.
+- **PASS** — Rear-stack separation: rear fan spacer/guard / USB hub body: Intersection 0.000 mm³; minimum distance 32.800 mm.
+- **PASS** — Rear-stack separation: rear fan spacer/guard / USB hub plug field: Intersection 0.000 mm³; minimum distance 2.408 mm.
+- **PASS** — Rear-stack separation: rear fan spacer/guard / Raspberry Pi cable route: Intersection 0.000 mm³; minimum distance 0.500 mm.
+- **PASS** — Rear-stack separation: rear fan spacer/guard / lower HDD USB-B bend: Intersection 0.000 mm³; minimum distance 8.800 mm.
+- **PASS** — Rear-stack separation: rear fan spacer/guard / lower HDD DC bend: Intersection 0.000 mm³; minimum distance 14.800 mm.
+- **PASS** — Rear-stack separation: rear fan spacer/guard / lower HDD rear route: Intersection 0.000 mm³; minimum distance 3.200 mm.
+- **PASS** — Rear-stack separation: rear fan spacer/guard / upper HDD USB-B bend: Intersection 0.000 mm³; minimum distance 18.472 mm.
+- **PASS** — Rear-stack separation: rear fan spacer/guard / upper HDD DC bend: Intersection 0.000 mm³; minimum distance 25.652 mm.
+- **PASS** — Rear-stack separation: rear fan spacer/guard / upper HDD rear route: Intersection 0.000 mm³; minimum distance 2.800 mm.
+- **PASS** — Rear-stack separation: rear fan spacer/guard / top rear panel: Intersection 0.000 mm³; minimum distance 2.000 mm.
+- **PASS** — Rear-stack separation: rear fan spacer/guard / right rear side module: Intersection 0.000 mm³; minimum distance 0.200 mm.
 - **PASS** — Hardware separation: HDD_lower / HDD_upper: Intersection volume 0.000 mm³.
 - **PASS** — Hardware separation: HDD_lower / Pi_case: Intersection volume 0.000 mm³.
 - **PASS** — Hardware separation: HDD_lower / USB_hub: Intersection volume 0.000 mm³.
 - **PASS** — Hardware separation: HDD_lower / fan_120: Intersection volume 0.000 mm³.
-- **PASS** — Hardware separation: HDD_lower / fan_80: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: HDD_lower / fan_140: Intersection volume 0.000 mm³.
 - **PASS** — Hardware separation: HDD_upper / Pi_case: Intersection volume 0.000 mm³.
 - **PASS** — Hardware separation: HDD_upper / USB_hub: Intersection volume 0.000 mm³.
 - **PASS** — Hardware separation: HDD_upper / fan_120: Intersection volume 0.000 mm³.
-- **PASS** — Hardware separation: HDD_upper / fan_80: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: HDD_upper / fan_140: Intersection volume 0.000 mm³.
 - **PASS** — Hardware separation: Pi_case / USB_hub: Intersection volume 0.000 mm³.
 - **PASS** — Hardware separation: Pi_case / fan_120: Intersection volume 0.000 mm³.
-- **PASS** — Hardware separation: Pi_case / fan_80: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: Pi_case / fan_140: Intersection volume 0.000 mm³.
 - **PASS** — Hardware separation: USB_hub / fan_120: Intersection volume 0.000 mm³.
-- **PASS** — Hardware separation: USB_hub / fan_80: Intersection volume 0.000 mm³.
-- **PASS** — Hardware separation: fan_120 / fan_80: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: USB_hub / fan_140: Intersection volume 0.000 mm³.
+- **PASS** — Hardware separation: fan_120 / fan_140: Intersection volume 0.000 mm³.
 - **PASS** — Cross-system connector and cable separation: 332 unrelated cross-system pairs checked; 5 declared electrical connection pairs handled separately.
 - **PASS** — Cable continuity: Lower HDD USB-B plug to bend: Endpoint distance 0.000 mm.
 - **PASS** — Cable continuity: Lower HDD USB-B bend to exit: Endpoint distance 0.000 mm.
@@ -100,8 +122,8 @@ Boolean intersections larger than 0.10 mm³ are failures except for the two expl
 - **PASS** — Mechanical contact: foot_4 / base_rear: Minimum surface distance 0.000 mm.
 - **PASS** — Mechanical contact: USB hub bottom retention: Minimum surface distance 0.000 mm.
 - **PASS** — Mechanical contact: 120 mm fan panel seating: Minimum surface distance 0.000 mm.
-- **PASS** — Mechanical contact: 80 mm fan panel seating: Minimum surface distance 0.000 mm.
-- **PASS** — Mechanical contact: 80 mm fan guard seating: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: Rear spacer to panel seating: Minimum surface distance 0.000 mm.
+- **PASS** — Mechanical contact: 140 mm fan to spacer seating: Minimum surface distance 0.000 mm.
 - **PASS** — HDD lower post-removal support polygon: HDD center (73.0, 131.3); fixed/left support polygon ((12.35, 60.0), (133.65, 31.549999999999997), (133.65, 231.05), (12.35, 205.0)).
 - **PASS** — HDD upper post-removal support polygon: HDD center (73.0, 131.3); fixed/left support polygon ((12.35, 60.0), (133.65, 31.549999999999997), (133.65, 231.05), (12.35, 205.0)).
 - **PASS** — Right-front side-panel removal after Pi tray removal: 67 rigid-body positions checked through (1.0, 0.0, 0.0) x 20.0 mm.
@@ -111,6 +133,7 @@ Boolean intersections larger than 0.10 mm³ are failures except for the two expl
 - **PASS** — Rear-wall traversal: HDD_lower_rear_exit_route: Route reaches Y=292.10 mm past rear wall Y=291.10 mm.
 - **PASS** — Rear-wall traversal: HDD_upper_rear_exit_route: Route reaches Y=292.10 mm past rear wall Y=291.10 mm.
 - **PASS** — Rear-wall traversal: USB_hub_plug_clearance: Route reaches Y=296.30 mm past rear wall Y=291.10 mm.
+- **PASS** — Rear-wall traversal: rear_fan_wire_route: Route reaches Y=301.10 mm past rear wall Y=291.10 mm.
 - **PASS** — HDD-to-HDD airflow gap: Actual 12.00 mm; required 12.00 mm.
 - **PASS** — HDD rear cable chamber depth: Actual 60.00 mm; required 60.00 mm.
 - **PASS** — HDD left rail guide clearance: Actual 1.25 mm; configured 1.25 mm.
@@ -118,7 +141,13 @@ Boolean intersections larger than 0.10 mm³ are failures except for the two expl
 - **PASS** — Front fan to HDD nose gap: Actual 6.50 mm.
 - **PASS** — Front fan to tray clearance: Actual 2.25 mm.
 - **PASS** — Rear fan top clearance: Actual 2.00 mm.
-- **PASS** — Provisional USB hub to rear fan-guard clearance: Actual 2.20 mm; required 1.50 mm.
+- **PASS** — Provisional USB hub plug field to rear fan guard clearance: Actual 2.41 mm; required 1.50 mm.
+- **PASS** — Pi route to rear fan guard clearance: Actual 0.50 mm; required 0.20 mm.
+- **PASS** — Lower HDD route to rear fan guard clearance: Actual 3.20 mm; required 0.20 mm.
+- **PASS** — Upper HDD route to rear fan guard clearance: Actual 2.80 mm; required 0.20 mm.
+- **PASS** — 140 mm rear fan horizontal centering: Centering error 0.0000 mm; fan X=3.00 mm.
+- **PASS** — External rear fan spacer depth: Panel-to-fan spacing 10.00 mm.
+- **PASS** — Rear fan opening structural lands: Side/top/low-slot webs 3.70/5.50/3.50 mm; required 2.80 mm.
 - **PASS** — Fixed HDD service posts clear drive body: Front/rear body gaps 1.25/1.25 mm; required 1.25 mm.
 
 ## Service-path assumptions

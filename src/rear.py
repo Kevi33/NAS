@@ -1,4 +1,4 @@
-"""Removable rear access panel and 80 mm cable guard."""
+"""Removable rear access panel and external 140 mm fan spacer/guard."""
 
 import cadquery as cq
 
@@ -94,10 +94,20 @@ def make_rear_panel() -> cq.Workplane:
             C.CABLE_EDGE_CHAMFER,
             90.0,
         ),
+        chamfered_slot_cutter(
+            C.REAR_FAN_WIRE_SLOT_L,
+            C.REAR_FAN_WIRE_SLOT_W,
+            C.WALL + 0.2,
+            C.REAR_FAN_WIRE_SLOT_X - C.WALL,
+            C.REAR_FAN_WIRE_SLOT_Z - C.WALL,
+            -0.1,
+            C.CABLE_EDGE_CHAMFER,
+            90.0,
+        ),
     )
     for opening_shape in openings:
         shape = shape.cut(opening_shape)
-    return _edge_tongues(shape)
+    return _edge_tongues(shape).clean()
 
 
 def make_rear_fan_guard() -> cq.Workplane:
@@ -112,39 +122,54 @@ def make_rear_fan_guard() -> cq.Workplane:
         C.FAN_GUARD_DEPTH + 0.2,
     )
     guard = outer.cut(inner)
-    # Cable-retaining crossbars at the chamber side of the guard.
-    guard = guard.union(
-        box_at(
-            size / 2.0 - C.FAN_GUARD_CROSSBAR_W / 2.0,
-            0.0,
-            0.0,
-            C.FAN_GUARD_CROSSBAR_W,
-            size,
-            C.FAN_GUARD_CROSSBAR_T,
-        )
-    )
-    guard = guard.union(
-        box_at(
-            0.0,
-            size / 2.0 - C.FAN_GUARD_CROSSBAR_W / 2.0,
-            0.0,
-            size,
-            C.FAN_GUARD_CROSSBAR_W,
-            C.FAN_GUARD_CROSSBAR_T,
-        )
-    )
     half = C.REAR_FAN_HOLE_SPACING / 2.0
-    for x in (size / 2.0 - half, size / 2.0 + half):
-        for y in (size / 2.0 - half, size / 2.0 + half):
-            guard = guard.cut(
-                cylinder_at(
-                    C.FAN_MOUNT_HOLE_D / 2.0,
-                    C.FAN_GUARD_DEPTH + 0.2,
-                    (x, y, -0.1),
-                    (0.0, 0.0, 1.0),
-                )
+    hole_centers = tuple(
+        (x, y)
+        for x in (size / 2.0 - half, size / 2.0 + half)
+        for y in (size / 2.0 - half, size / 2.0 + half)
+    )
+    # Full-depth bosses keep the wide 124.5 mm mounting pattern connected to
+    # the perimeter instead of leaving the screw holes in the open duct.
+    for x, y in hole_centers:
+        guard = guard.union(
+            cylinder_at(
+                C.FAN_GUARD_BOSS_R,
+                C.FAN_GUARD_DEPTH,
+                (x, y, 0.0),
+                (0.0, 0.0, 1.0),
             )
-    return guard
+        )
+    # Cable-retaining crossbars sit at the fan side of the external spacer.
+    guard = guard.union(
+        box_at(
+            size / 2.0 - C.FAN_GUARD_CROSSBAR_W / 2.0,
+            0.0,
+            0.0,
+            C.FAN_GUARD_CROSSBAR_W,
+            size,
+            C.FAN_GUARD_CROSSBAR_T,
+        )
+    )
+    guard = guard.union(
+        box_at(
+            0.0,
+            size / 2.0 - C.FAN_GUARD_CROSSBAR_W / 2.0,
+            0.0,
+            size,
+            C.FAN_GUARD_CROSSBAR_W,
+            C.FAN_GUARD_CROSSBAR_T,
+        )
+    )
+    for x, y in hole_centers:
+        guard = guard.cut(
+            cylinder_at(
+                C.FAN_MOUNT_HOLE_D / 2.0,
+                C.FAN_GUARD_DEPTH + 0.2,
+                (x, y, -0.1),
+                (0.0, 0.0, 1.0),
+            )
+        )
+    return guard.clean()
 
 
 def parts() -> list[PrintablePart]:
@@ -153,7 +178,12 @@ def parts() -> list[PrintablePart]:
             "rear_panel",
             make_rear_panel(),
             orientation="exterior face on bed; grille and tongues upward",
-            notes="Rearward-pull cable cover with 80 mm exhaust and four chamfered cable openings.",
+            notes="Rearward-pull cable cover with centered 140 mm exhaust and protected cable openings.",
         ),
-        PrintablePart("rear_fan_guard", make_rear_fan_guard(), notes="Keeps loose cables out of exhaust fan."),
+        PrintablePart(
+            "rear_fan_guard",
+            make_rear_fan_guard(),
+            orientation="fan-side crossbar face on bed; spacer walls upward",
+            notes="External 10 mm spacer and broad cable guard for the 140 mm exhaust fan.",
+        ),
     ]

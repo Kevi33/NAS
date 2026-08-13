@@ -2,10 +2,12 @@
 
 Generated directly from the current `config.py` and CadQuery bounding boxes.
 
-## Final NAS external dimensions
+## Final configured dimensions
 
 - Width: **146.00 mm**
-- Depth: **291.10 mm**
+- Unchanged enclosure-body depth: **291.10 mm**
+- Installed depth including external rear fan: **326.10 mm**
+- External rear spacer depth: **10.00 mm**
 - Body height: **174.00 mm**
 - Overall height including feet: **180.00 mm**
 
@@ -27,7 +29,7 @@ Generated directly from the current `config.py` and CadQuery bounding boxes.
 | `foot` | 4 | 16.00 | 16.00 | 6.00 | PASS |
 | `front_panel` | 1 | 143.20 | 168.40 | 2.80 | PASS |
 | `rear_panel` | 1 | 143.20 | 168.40 | 2.80 | PASS |
-| `rear_fan_guard` | 1 | 80.00 | 80.00 | 8.00 | PASS |
+| `rear_fan_guard` | 1 | 140.00 | 140.00 | 10.00 | PASS |
 | `left_side_front` | 1 | 145.55 | 168.40 | 13.85 | PASS |
 | `left_side_rear` | 1 | 145.55 | 168.40 | 13.85 | PASS |
 | `right_side_front` | 1 | 145.55 | 168.40 | 13.85 | PASS |
@@ -63,7 +65,7 @@ Largest single preferred-orientation extent: **174.00 mm** on `mid_frame`.
 - Pi-to-mid-frame service gap: 5.25 mm
 - USB hub rail-envelope clearance: 1.50 mm per side; mounting slots permit vertical adjustment
 - 120 mm fan min corner: X 13.00, Y 2.80, Z 27.00
-- 80 mm fan min corner: X 26.50, Y 263.30, Z 89.20
+- 140 mm fan min corner: X 3.00, Y 301.10, Z 29.20
 - Panel thickness: **2.80 mm**
 - Sliding fit clearance: **0.20 mm per mating side**
 - HDD keeper clearance: **0.00 mm per mating side**

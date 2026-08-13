@@ -67,8 +67,8 @@ def nominal_hardware() -> dict[str, ReferenceModel]:
         "fan_120": _fan(
             "fan_120", C.FRONT_FAN_X, C.FRONT_FAN_Y, C.FRONT_FAN_Z, C.FRONT_FAN_SIZE, C.FRONT_FAN_THICKNESS
         ),
-        "fan_80": _fan(
-            "fan_80", C.REAR_FAN_X, C.REAR_FAN_Y, C.REAR_FAN_Z, C.REAR_FAN_SIZE, C.REAR_FAN_THICKNESS
+        "fan_140": _fan(
+            "fan_140", C.REAR_FAN_X, C.REAR_FAN_Y, C.REAR_FAN_Z, C.REAR_FAN_SIZE, C.REAR_FAN_THICKNESS
         ),
     }
 
@@ -172,7 +172,8 @@ def clearance_models() -> dict[str, ReferenceModel]:
             "clearance",
         )
 
-    # Pi connectors first extend rearward, then route left of the exhaust fan.
+    # Pi connectors first extend rearward, then pass the inner edge of the
+    # external rear-fan spacer without entering the rotor envelope.
     pi_route1 = box_at(
         C.PI_X + C.PI_ROUTE_BODY_SIDE_INSET,
         C.PI_Y + C.PI_CASE_L,

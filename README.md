@@ -1,12 +1,14 @@
 # Parametric Raspberry Pi 5 NAS enclosure
 
-This repository is an executable CadQuery project for a modular, FDM-printable mini-NAS. It is configured for two UGREEN 50422 / US222 drive enclosures, a Raspberry Pi 5 in a provisional GeeekPi metal case, a provisional UGREEN 25851 USB hub, a 120 mm front intake fan, and an 80 mm rear exhaust fan.
+This repository is an executable CadQuery project for a modular, FDM-printable mini-NAS. It is configured for two UGREEN 50422 / US222 drive enclosures, a Raspberry Pi 5 in a provisional GeeekPi metal case, a provisional UGREEN 25851 USB hub, a 120 mm front intake fan, and a measured 140 mm rear exhaust fan.
 
 The build creates real solids rather than a rendering-only mock-up: individual STEP/STL print files, named assembled/exploded/checking STEP models, fit coupons, automated geometry reports, and PNG previews.
 
 ## Current configured envelope
 
 - Body: **146.0 x 291.1 x 174.0 mm** (W x D x H)
+- Installed depth including the external rear fan: **326.1 mm**
+- External rear fan spacer: **10.0 mm**
 - Height including 6 mm feet: **180.0 mm**
 - Drive rear cable chamber: **60.0 mm**
 - HDD guide clearance: **1.25 mm per guided side**
@@ -32,6 +34,12 @@ To generate only the dedicated keeper-retention calibration model without touchi
 
 ```powershell
 .\.venv\Scripts\python.exe build_keeper_retention_test.py
+```
+
+To regenerate only the two rear-fan printable parts plus affected assemblies and reports, while hash-protecting every unrelated export and slicer project, use:
+
+```powershell
+.\.venv\Scripts\python.exe build_rear_fan_update.py
 ```
 
 On Linux/macOS, use `.venv/bin/python`. A good run ends with `BUILD RESULT: SUCCESS`; any source-solid, exported-mesh, STEP-reopen, print-bed, collision, cable-route, or service-path failure returns a non-zero exit code. The generator deletes only old files in its known output directories before rebuilding, so renamed artifacts cannot remain stale.
@@ -87,7 +95,7 @@ The case depth, module split, frame pockets, carrier locations, cable chamber, s
 
 The 120 mm fan occupies the front/lower-middle region and blows rearward. Each HDD rests only on narrow edge rails, keeping the enclosure's underside heat-emission area open. Keyed side-panel ledges carry the split HDD cradles and the Pi tray; fixed front/rear base pedestals preserve a stable HDD support polygon while the right service panels are absent. Locator pockets prevent the carriers from wandering without permanently clamping the hardware.
 
-The Pi sits above the drives and entirely ahead of the transverse structural C-frame. Air continues through the large frame opening into the rear cable chamber, then leaves through the 80 mm exhaust and passive base/side/top vents. The printed fan guard and floor clips keep loose leads clear of the rear rotor.
+The Pi sits above the drives and entirely ahead of the transverse structural C-frame. Air continues through the large frame opening into the rear cable chamber, then leaves through the centered 140 mm exhaust and passive base/side/top vents. The rear fan sits outside the original enclosure body on a shallow printed spacer/guard, preserving the fixed hub and cable chamber while keeping loose leads clear of the rotor.
 
 The hub mounts vertically on a slotted rail carrier with a positive bottom stop and two strap stations in the right-rear chamber. Its four provisional rear-facing USB plug envelopes pass through a chamfered rear service opening, including two explicitly modeled fan USB-adapter bodies. If physical measurement shows the real port face differs, change the hub/port parameters before printing.
 
@@ -103,7 +111,7 @@ The hub mounts vertically on a slotted rail carrier with a positive bottom stop 
 8. Seat the USB hub against the carrier's bottom stop, secure its strap, and connect the low-voltage wiring. Keep every AC adapter outside the printed enclosure.
 9. Fit `top_rear`, then the lift-off `top_service_lid` last to capture the side rails.
 
-For Pi service, unplug it, remove only the front top service lid, and lift the case and tray vertically. For rear cable service, disconnect the 80 mm fan lead and pull the rear panel, fan, and guard straight rearward (+Y); do not lift the panel against its interrupted tongues. Neither HDD needs to move.
+For Pi service, unplug it, remove only the front top service lid, and lift the case and tray vertically. For rear cable service, disconnect the 140 mm fan lead and pull the rear panel, external spacer/guard, and fan straight rearward (+Y); do not lift the panel against its interrupted tongues. Neither HDD needs to move.
 
 For HDD service, remove both top modules, unplug and lift out the Pi and its tray, then disconnect all four hub device plugs and the hub host lead. The strapped hub may remain in its carrier. Remove both right side modules, the removable frame spine, and the selected drive's keeper; the selected HDD slides laterally to the right. The untouched loaded tray remains inside the support polygon formed by its left ledges and the fixed front/rear base pedestals.
 

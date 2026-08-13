@@ -111,6 +111,8 @@ def placed_printable_parts(parts: dict[str, PrintablePart] | None = None) -> dic
         .translate((mount_x, mount_y, mount_z))
     )
     add("usb_hub_mount", "usb_hub_mount", hub_mount, True)
+    # The source guard grows along +Z; this transform makes that depth extend
+    # from the rear wall toward the external fan along assembly +Y.
     guard = parts["rear_fan_guard"].shape.rotate((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 90.0).translate(
         (C.REAR_FAN_X, C.REAR_FAN_Y, C.REAR_FAN_Z)
     )
@@ -169,7 +171,7 @@ def _exploded_shape(item: PlacedPart) -> cq.Workplane:
     elif name == "mid_frame_right_spine":
         vector = (20.0, 0.0, 0.0)
     elif name == "rear_fan_guard":
-        vector = (0.0, -16.0, 0.0)
+        vector = (0.0, 48.0, 0.0)
     return item.shape.translate(vector)
 
 
@@ -194,8 +196,8 @@ def cadquery_assembly(
                     ref_shape = ref_shape.translate((18.0, 0.0, 0.0))
                 elif reference.name == "fan_120":
                     ref_shape = ref_shape.translate((0.0, -20.0, 0.0))
-                elif reference.name == "fan_80":
-                    ref_shape = ref_shape.translate((0.0, 20.0, 0.0))
+                elif reference.name == "fan_140":
+                    ref_shape = ref_shape.translate((0.0, 68.0, 0.0))
             assembly.add(ref_shape, name=reference.name, color=color(reference.color))
     return assembly
 

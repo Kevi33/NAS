@@ -11,8 +11,8 @@ Every row is a hard build gate. Production geometry remains modular; no parts we
 | `base_rear` | 146.00 × 145.55 × 60.00 mm | PASS | PASS | PASS | 1/1 | 4984 | 0.076438 mm² | largest flat face on bed; detail side up | none |
 | `foot` | 16.00 × 16.00 × 6.00 mm | PASS | PASS | PASS | 1/1 | 672 | 0.381389 mm² | largest flat face on bed; detail side up | none |
 | `front_panel` | 143.20 × 168.40 × 2.80 mm | PASS | PASS | PASS | 1/1 | 1840 | 0.235548 mm² | exterior grille face on bed; interior face up | none |
-| `rear_panel` | 143.20 × 168.40 × 2.80 mm | PASS | PASS | PASS | 1/1 | 4600 | 0.207570 mm² | exterior face on bed; grille and tongues upward | none |
-| `rear_fan_guard` | 80.00 × 80.00 × 8.00 mm | PASS | PASS | PASS | 1/1 | 1052 | 0.046946 mm² | largest flat face on bed; detail side up | none |
+| `rear_panel` | 143.20 × 168.40 × 2.80 mm | PASS | PASS | PASS | 1/1 | 5176 | 0.048914 mm² | exterior face on bed; grille and tongues upward | none |
+| `rear_fan_guard` | 140.00 × 140.00 × 10.00 mm | PASS | PASS | PASS | 1/1 | 2236 | 0.053587 mm² | fan-side crossbar face on bed; spacer walls upward | none |
 | `left_side_front` | 145.55 × 168.40 × 13.85 mm | PASS | PASS | PASS | 1/1 | 2336 | 0.126908 mm² | largest flat face on bed; detail side up | none |
 | `left_side_rear` | 145.55 × 168.40 × 13.85 mm | PASS | PASS | PASS | 1/1 | 2952 | 0.177968 mm² | largest flat face on bed; detail side up | none |
 | `right_side_front` | 145.55 × 168.40 × 13.85 mm | PASS | PASS | PASS | 1/1 | 2336 | 0.126908 mm² | largest flat face on bed; detail side up | none |
@@ -67,13 +67,13 @@ Every row is a hard build gate. Production geometry remains modular; no parts we
 - **PASS** — PRINT BED: front_panel: STL 143.20 × 168.40 × 2.80 mm; validated usable envelope 250.00 × 250.00 × 250.00 mm; source/STL bounds match; orthogonal alternative YES.
 - **PASS** — NON-ZERO VOLUME: front_panel: Source 46208.734 mm³; signed STL 46223.722 mm³; VTK 46223.722 mm³; all 1 component volume(s) positive.
 - **PASS** — SOURCE/EXPORT IDENTITY: front_panel: Source 1 solid(s), STEP 1; source/STL volume matches, source/STEP volume matches.
-- **PASS** — MANIFOLD: rear_panel: 4600 triangles, 1 raw/1 VTK region(s); boundary 0, non-manifold 0, winding 0, vertex-link 0, sliver/degenerate 0, duplicate 0, normal 0, self-intersection 0; minimum triangle area 0.207570 mm²; source BRep valid (0 degenerate edges).
+- **PASS** — MANIFOLD: rear_panel: 5176 triangles, 1 raw/1 VTK region(s); boundary 0, non-manifold 0, winding 0, vertex-link 0, sliver/degenerate 0, duplicate 0, normal 0, self-intersection 0; minimum triangle area 0.048914 mm²; source BRep valid (0 degenerate edges).
 - **PASS** — PRINT BED: rear_panel: STL 143.20 × 168.40 × 2.80 mm; validated usable envelope 250.00 × 250.00 × 250.00 mm; source/STL bounds match; orthogonal alternative YES.
-- **PASS** — NON-ZERO VOLUME: rear_panel: Source 44734.924 mm³; signed STL 44748.367 mm³; VTK 44748.367 mm³; all 1 component volume(s) positive.
+- **PASS** — NON-ZERO VOLUME: rear_panel: Source 29557.764 mm³; signed STL 29580.626 mm³; VTK 29580.626 mm³; all 1 component volume(s) positive.
 - **PASS** — SOURCE/EXPORT IDENTITY: rear_panel: Source 1 solid(s), STEP 1; source/STL volume matches, source/STEP volume matches.
-- **PASS** — MANIFOLD: rear_fan_guard: 1052 triangles, 1 raw/1 VTK region(s); boundary 0, non-manifold 0, winding 0, vertex-link 0, sliver/degenerate 0, duplicate 0, normal 0, self-intersection 0; minimum triangle area 0.046946 mm²; source BRep valid (0 degenerate edges).
-- **PASS** — PRINT BED: rear_fan_guard: STL 80.00 × 80.00 × 8.00 mm; validated usable envelope 250.00 × 250.00 × 250.00 mm; source/STL bounds match; orthogonal alternative YES.
-- **PASS** — NON-ZERO VOLUME: rear_fan_guard: Source 10728.222 mm³; signed STL 10728.562 mm³; VTK 10728.562 mm³; all 1 component volume(s) positive.
+- **PASS** — MANIFOLD: rear_fan_guard: 2236 triangles, 1 raw/1 VTK region(s); boundary 0, non-manifold 0, winding 0, vertex-link 0, sliver/degenerate 0, duplicate 0, normal 0, self-intersection 0; minimum triangle area 0.053587 mm²; source BRep valid (0 degenerate edges).
+- **PASS** — PRINT BED: rear_fan_guard: STL 140.00 × 140.00 × 10.00 mm; validated usable envelope 250.00 × 250.00 × 250.00 mm; source/STL bounds match; orthogonal alternative YES.
+- **PASS** — NON-ZERO VOLUME: rear_fan_guard: Source 26476.402 mm³; signed STL 26475.425 mm³; VTK 26475.425 mm³; all 1 component volume(s) positive.
 - **PASS** — SOURCE/EXPORT IDENTITY: rear_fan_guard: Source 1 solid(s), STEP 1; source/STL volume matches, source/STEP volume matches.
 - **PASS** — MANIFOLD: left_side_front: 2336 triangles, 1 raw/1 VTK region(s); boundary 0, non-manifold 0, winding 0, vertex-link 0, sliver/degenerate 0, duplicate 0, normal 0, self-intersection 0; minimum triangle area 0.126908 mm²; source BRep valid (0 degenerate edges).
 - **PASS** — PRINT BED: left_side_front: STL 145.55 × 168.40 × 13.85 mm; validated usable envelope 250.00 × 250.00 × 250.00 mm; source/STL bounds match; orthogonal alternative YES.
@@ -131,6 +131,7 @@ Every row is a hard build gate. Production geometry remains modular; no parts we
 - **PASS** — PRINT BED: cable_clip: STL 12.80 × 10.00 × 15.20 mm; validated usable envelope 250.00 × 250.00 × 250.00 mm; source/STL bounds match; orthogonal alternative YES.
 - **PASS** — NON-ZERO VOLUME: cable_clip: Source 1166.020 mm³; signed STL 1166.061 mm³; VTK 1166.061 mm³; all 1 component volume(s) positive.
 - **PASS** — SOURCE/EXPORT IDENTITY: cable_clip: Source 1 solid(s), STEP 1; source/STL volume matches, source/STEP volume matches.
+- **PASS** — Fit-test STL/STEP inventory: Expected and found 5 STL plus 5 STEP fit artifacts.
 - **PASS** — MANIFOLD: dovetail_fit_test: 2116 triangles, 10 raw/10 VTK region(s); boundary 0, non-manifold 0, winding 0, vertex-link 0, sliver/degenerate 0, duplicate 0, normal 0, self-intersection 0; minimum triangle area 0.011250 mm²; source BRep valid (0 degenerate edges).
 - **PASS** — PRINT BED: dovetail_fit_test: STL 154.00 × 66.00 × 6.50 mm; validated usable envelope 250.00 × 250.00 × 250.00 mm; source/STL bounds match; orthogonal alternative YES.
 - **PASS** — NON-ZERO VOLUME: dovetail_fit_test: Source 19392.067 mm³; signed STL 19392.067 mm³; VTK 19392.067 mm³; all 10 component volume(s) positive.
@@ -151,7 +152,7 @@ Every row is a hard build gate. Production geometry remains modular; no parts we
 - **PASS** — PRINT BED: hdd_keeper_retention_test: STL 122.20 × 32.00 × 9.00 mm; validated usable envelope 250.00 × 250.00 × 250.00 mm; source/STL bounds match; orthogonal alternative YES.
 - **PASS** — NON-ZERO VOLUME: hdd_keeper_retention_test: Source 5305.564 mm³; signed STL 5305.563 mm³; VTK 5305.563 mm³; all 10 component volume(s) positive.
 - **PASS** — SOURCE/EXPORT IDENTITY: hdd_keeper_retention_test: Source 10 solid(s), STEP 10; source/STL volume matches, source/STEP volume matches.
-- **PASS** — STEP artifact: NAS_Assembly: Reopened with 42 valid solid(s), volume 2997185.73 mm³; expected 42 solid(s) and 2997185.73 mm³.
-- **PASS** — STEP artifact: NAS_Exploded: Reopened with 42 valid solid(s), volume 2997185.73 mm³; expected 42 solid(s) and 2997185.73 mm³.
-- **PASS** — STEP artifact: NAS_Internal_Inspection: Reopened with 37 valid solid(s), volume 2710491.32 mm³; expected 37 solid(s) and 2710491.32 mm³.
-- **PASS** — STEP artifact: NAS_Clearance_Check: Reopened with 81 valid solid(s), volume 7724697.89 mm³; expected 81 solid(s) and 7724697.89 mm³.
+- **PASS** — STEP artifact: NAS_Assembly: Reopened with 42 valid solid(s), volume 3168830.87 mm³; expected 42 solid(s) and 3168830.87 mm³.
+- **PASS** — STEP artifact: NAS_Exploded: Reopened with 42 valid solid(s), volume 3168830.87 mm³; expected 42 solid(s) and 3168830.87 mm³.
+- **PASS** — STEP artifact: NAS_Internal_Inspection: Reopened with 37 valid solid(s), volume 2882136.46 mm³; expected 37 solid(s) and 2882136.46 mm³.
+- **PASS** — STEP artifact: NAS_Clearance_Check: Reopened with 81 valid solid(s), volume 7938472.09 mm³; expected 81 solid(s) and 7938472.09 mm³.

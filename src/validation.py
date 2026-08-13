@@ -182,8 +182,8 @@ def _reference_system(name: str) -> str | None:
         return "USB_hub"
     if name.startswith("front_fan") or name == "fan_120":
         return "fan_120"
-    if name.startswith("rear_fan") or name == "fan_80":
-        return "fan_80"
+    if name.startswith("rear_fan") or name == "fan_140":
+        return "fan_140"
     return None
 
 
@@ -848,7 +848,7 @@ def clearance_checks(
         "Pi_case": "Raspberry Pi case clearance",
         "USB_hub": "USB hub clearance",
         "fan_120": "120 mm fan clearance",
-        "fan_80": "80 mm fan clearance",
+        "fan_140": "140 mm fan clearance",
     }
     for ref_name, label in labels.items():
         hits = _collisions(references[ref_name].shape, placed)
@@ -861,6 +861,39 @@ def clearance_checks(
         hits = _collisions(reference.shape, placed)
         readable = ref_name.replace("_", " ")
         checks.append(CheckResult(readable, not hits, _hits_detail(hits)))
+
+    # Report the measured 140 mm rear stack against every neighboring field
+    # called out in the design brief. These explicit results supplement the
+    # general hardware/reference collision scans above and make regressions
+    # in the external-fan topology immediately visible in the report.
+    rear_stack_components = (
+        ("140 mm rear fan", references["fan_140"].shape),
+        ("rear fan spacer/guard", placed["rear_fan_guard"].shape),
+    )
+    rear_stack_targets = (
+        ("USB hub body", references["USB_hub"].shape),
+        ("USB hub plug field", references["USB_hub_plug_clearance"].shape),
+        ("Raspberry Pi cable route", references["Pi_port_and_route_clearance"].shape),
+        ("lower HDD USB-B bend", references["HDD_lower_USB_B_bend_zone"].shape),
+        ("lower HDD DC bend", references["HDD_lower_DC_bend_zone"].shape),
+        ("lower HDD rear route", references["HDD_lower_rear_exit_route"].shape),
+        ("upper HDD USB-B bend", references["HDD_upper_USB_B_bend_zone"].shape),
+        ("upper HDD DC bend", references["HDD_upper_DC_bend_zone"].shape),
+        ("upper HDD rear route", references["HDD_upper_rear_exit_route"].shape),
+        ("top rear panel", placed["top_rear"].shape),
+        ("right rear side module", placed["right_side_rear"].shape),
+    )
+    for component_name, component_shape in rear_stack_components:
+        for target_name, target_shape in rear_stack_targets:
+            overlap = _intersection_volume(component_shape, target_shape)
+            distance = shape_value(component_shape).distance(shape_value(target_shape))
+            checks.append(
+                CheckResult(
+                    f"Rear-stack separation: {component_name} / {target_name}",
+                    overlap <= C.COLLISION_VOLUME_EPS,
+                    f"Intersection {overlap:.3f} mm³; minimum distance {distance:.3f} mm.",
+                )
+            )
 
     # Pairwise hardware collisions.
     hardware = [reference for reference in references.values() if reference.category == "hardware"]
@@ -925,7 +958,7 @@ def clearance_checks(
         ("Front fan to wire route", "fan_120", "front_fan_wire_route"),
         ("Front fan route to USB adapter", "front_fan_wire_route", "USB_hub_front_fan_USB_adapter"),
         ("Front fan adapter to hub", "USB_hub_front_fan_USB_adapter", "USB_hub"),
-        ("Rear fan to wire route", "fan_80", "rear_fan_wire_route"),
+        ("Rear fan to wire route", "fan_140", "rear_fan_wire_route"),
         ("Rear fan route to USB adapter", "rear_fan_wire_route", "USB_hub_rear_fan_USB_adapter"),
         ("Rear fan adapter to hub", "USB_hub_rear_fan_USB_adapter", "USB_hub"),
     )
@@ -1001,8 +1034,8 @@ def clearance_checks(
     hardware_contacts = (
         ("USB hub bottom retention", references["USB_hub"].shape, placed["usb_hub_mount"].shape),
         ("120 mm fan panel seating", references["fan_120"].shape, placed["front_panel"].shape),
-        ("80 mm fan panel seating", references["fan_80"].shape, placed["rear_panel"].shape),
-        ("80 mm fan guard seating", references["fan_80"].shape, placed["rear_fan_guard"].shape),
+        ("Rear spacer to panel seating", placed["rear_fan_guard"].shape, placed["rear_panel"].shape),
+        ("140 mm fan to spacer seating", references["fan_140"].shape, placed["rear_fan_guard"].shape),
     )
     for label, hardware_shape, printed_shape in hardware_contacts:
         distance = shape_value(hardware_shape).distance(shape_value(printed_shape))
@@ -1061,7 +1094,7 @@ def clearance_checks(
             ("rear_panel", "rear_fan_guard"),
             set(),
             direction=(0.0, 1.0, 0.0),
-            extra_moving={"fan_80": references["fan_80"].shape},
+            extra_moving={"fan_140": references["fan_140"].shape},
             travel=80.0,
             increment=1.0,
         )
@@ -1072,6 +1105,7 @@ def clearance_checks(
         "HDD_lower_rear_exit_route",
         "HDD_upper_rear_exit_route",
         "USB_hub_plug_clearance",
+        "rear_fan_wire_route",
     ):
         ymax = shape_value(references[ref_name].shape).BoundingBox().ymax
         checks.append(
@@ -1139,12 +1173,66 @@ def clearance_checks(
             f"Actual {fan_top_gap:.2f} mm.",
         )
     )
-    hub_guard_gap = C.USB_HUB_X - (C.REAR_FAN_X + C.REAR_FAN_SIZE)
+    hub_guard_gap = shape_value(references["USB_hub_plug_clearance"].shape).distance(
+        shape_value(placed["rear_fan_guard"].shape)
+    )
     checks.append(
         CheckResult(
-            "Provisional USB hub to rear fan-guard clearance",
+            "Provisional USB hub plug field to rear fan guard clearance",
             hub_guard_gap + 1e-6 >= C.USB_HUB_CLEARANCE,
             f"Actual {hub_guard_gap:.2f} mm; required {C.USB_HUB_CLEARANCE:.2f} mm.",
+        )
+    )
+    for label, ref_name in (
+        ("Pi route to rear fan guard clearance", "Pi_port_and_route_clearance"),
+        ("Lower HDD route to rear fan guard clearance", "HDD_lower_rear_exit_route"),
+        ("Upper HDD route to rear fan guard clearance", "HDD_upper_rear_exit_route"),
+    ):
+        gap = shape_value(references[ref_name].shape).distance(
+            shape_value(placed["rear_fan_guard"].shape)
+        )
+        checks.append(
+            CheckResult(
+                label,
+                gap + 1e-6 >= C.FIT_CLEARANCE,
+                f"Actual {gap:.2f} mm; required {C.FIT_CLEARANCE:.2f} mm.",
+            )
+        )
+    fan_center_error = abs(
+        C.REAR_FAN_X - (C.NAS_EXTERNAL_W - C.REAR_FAN_SIZE) / 2.0
+    )
+    checks.append(
+        CheckResult(
+            "140 mm rear fan horizontal centering",
+            fan_center_error <= 1e-6,
+            f"Centering error {fan_center_error:.4f} mm; fan X={C.REAR_FAN_X:.2f} mm.",
+        )
+    )
+    spacer_depth = C.REAR_FAN_Y - C.NAS_EXTERNAL_D
+    checks.append(
+        CheckResult(
+            "External rear fan spacer depth",
+            abs(spacer_depth - C.FAN_GUARD_DEPTH) <= 1e-6,
+            f"Panel-to-fan spacing {spacer_depth:.2f} mm.",
+        )
+    )
+    opening_edge_land = (C.NAS_EXTERNAL_W - C.REAR_FAN_CUTOUT_D) / 2.0 - C.WALL
+    opening_top_land = (
+        C.NAS_BODY_H
+        - C.WALL
+        - (C.REAR_FAN_Z + (C.REAR_FAN_SIZE + C.REAR_FAN_CUTOUT_D) / 2.0)
+    )
+    low_slot_to_opening_web = (
+        C.REAR_FAN_Z
+        + (C.REAR_FAN_SIZE - C.REAR_FAN_CUTOUT_D) / 2.0
+        - (C.REAR_LOW_SLOT_Z + C.REAR_LOW_SLOT_W / 2.0 + C.CABLE_EDGE_CHAMFER)
+    )
+    checks.append(
+        CheckResult(
+            "Rear fan opening structural lands",
+            min(opening_edge_land, opening_top_land, low_slot_to_opening_web) + 1e-6 >= C.WALL,
+            f"Side/top/low-slot webs {opening_edge_land:.2f}/{opening_top_land:.2f}/"
+            f"{low_slot_to_opening_web:.2f} mm; required {C.WALL:.2f} mm.",
         )
     )
     front_post_gap = C.HDD_Y - (C.HDD_SERVICE_FRONT_Y + C.HDD_SERVICE_POST_DEPTH)
@@ -1171,10 +1259,12 @@ def write_dimensions_report(
         "",
         "Generated directly from the current `config.py` and CadQuery bounding boxes.",
         "",
-        "## Final NAS external dimensions",
+        "## Final configured dimensions",
         "",
         f"- Width: **{C.NAS_EXTERNAL_W:.2f} mm**",
-        f"- Depth: **{C.NAS_EXTERNAL_D:.2f} mm**",
+        f"- Unchanged enclosure-body depth: **{C.NAS_EXTERNAL_D:.2f} mm**",
+        f"- Installed depth including external rear fan: **{C.REAR_FAN_Y + C.REAR_FAN_THICKNESS:.2f} mm**",
+        f"- External rear spacer depth: **{C.REAR_FAN_SPACER_DEPTH:.2f} mm**",
         f"- Body height: **{C.NAS_BODY_H:.2f} mm**",
         f"- Overall height including feet: **{overall_h:.2f} mm**",
         "",
@@ -1222,7 +1312,7 @@ def write_dimensions_report(
             f"- Pi-to-mid-frame service gap: {C.MID_FRAME_FRONT_Y - (C.PI_Y + C.PI_CASE_L):.2f} mm",
             f"- USB hub rail-envelope clearance: {C.USB_HUB_CLEARANCE:.2f} mm per side; mounting slots permit vertical adjustment",
             f"- 120 mm fan min corner: X {C.FRONT_FAN_X:.2f}, Y {C.FRONT_FAN_Y:.2f}, Z {C.FRONT_FAN_Z:.2f}",
-            f"- 80 mm fan min corner: X {C.REAR_FAN_X:.2f}, Y {C.REAR_FAN_Y:.2f}, Z {C.REAR_FAN_Z:.2f}",
+            f"- 140 mm fan min corner: X {C.REAR_FAN_X:.2f}, Y {C.REAR_FAN_Y:.2f}, Z {C.REAR_FAN_Z:.2f}",
             f"- Panel thickness: **{C.WALL:.2f} mm**",
             f"- Sliding fit clearance: **{C.FIT_CLEARANCE:.2f} mm per mating side**",
             f"- HDD keeper clearance: **{C.HDD_KEEPER_CLEARANCE:.2f} mm per mating side**",
